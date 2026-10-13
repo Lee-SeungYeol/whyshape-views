@@ -53,6 +53,7 @@ HTML = r"""<!doctype html>
   th { color: var(--ink2); font-weight: 400; border-top: 0; }
   th:first-child, td:first-child { text-align: left; }
   tbody tr:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+  tr.total td { font-weight: 700; border-top: 2px solid var(--ink2); background: color-mix(in srgb, var(--ink) 5%, transparent); }
   .plus { color: var(--up); font-size: 12px; margin-left: 4px; }
   .muted { color: var(--ink2); }
   .prow { display: grid; grid-template-columns: 110px 1fr 250px; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
@@ -193,7 +194,11 @@ document.getElementById("tnote").textContent = prev ? `초록색 숫자는 ${pre
 document.getElementById("tb").innerHTML = ranked.map((v) => {
   const p = prevOf(v.id) || {};
   return `<tr><td>${v.title}</td><td class="muted">${v.posted}</td><td>${n(v.tiktok)}${plus(v.tiktok, p.tiktok)}</td><td>${n(v.tt_likes)}</td><td>${n(v.tt_comments)}</td><td>${n(v.youtube)}${plus(v.youtube, p.youtube)}</td><td>${n(v.yt_likes)}</td><td>${n(v.yt_comments)}</td><td class="${v.insta == null ? "muted" : ""}">${v.insta == null ? "못 읽음" : n(v.insta) + plus(v.insta, p.insta)}</td><td>${n(v.ig_likes)}</td><td>${n(v.ig_comments)}</td><td><b>${n((v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0))}</b></td></tr>`;
-}).join("");
+}).join("") + (() => {
+  const K = ["tiktok", "tt_likes", "tt_comments", "youtube", "yt_likes", "yt_comments", "insta", "ig_likes", "ig_comments"];
+  const all = sum("tiktok") + sum("youtube") + sum("insta");
+  return `<tr class="total"><td>합계</td><td class="muted">영상 ${now.videos.length}편</td>${K.map((k) => `<td>${n(sum(k))}</td>`).join("")}<td>${n(all)}</td></tr>`;
+})();
 // ---- 전체 조회수 추세: 합계(굵게)와 플랫폼별(가늘게) ----
 (() => {
   const T = (s) => new Date(s.at.replace(" ", "T")).getTime();
