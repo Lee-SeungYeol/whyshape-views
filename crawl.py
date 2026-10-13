@@ -104,6 +104,11 @@ def instagram():
     m = re.search(r"팔로워\s*([\d.,]+[천만억]?)명[^\"]*?게시물\s*([\d.,]+)개", html)
     if m:
         out["__followers"], out["__posts"] = num(m.group(1)), num(m.group(2))
+    # 화면 머리말의 실제 숫자가 더 정확하다. 위의 og:description 값은 인스타그램이 늦게 고쳐서 팔로워가 생겨도 한동안 0명으로 남는다
+    for word, key in (("팔로워", "__followers"), ("게시물", "__posts")):
+        m = re.search(word + r"\s*<span[^>]*>(?:\s*<[^>]+>)*\s*([\d.,]+\s*[천만억]?)", html)
+        if m and num(m.group(1)) is not None:
+            out[key] = num(m.group(1))
     return out if any(not k.startswith("__") for k in out) else None
 
 def tiktok_list(known):
