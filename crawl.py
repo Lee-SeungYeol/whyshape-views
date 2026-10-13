@@ -176,9 +176,9 @@ def discover(videos, yt_ids, tt_ids, ig_codes, log):
             log.append(f"틱톡 설명 읽기 실패 {tid}: {e}")
         is_zh = bool(re.search(r"[一-鿿]", desc)) and not re.search(r"[가-힣]", desc)
         if is_zh:
-            base = next((v for v in videos if any(h in desc for h in v.get("zh_hint", []))), None)                 or next((v for v in videos if not v["title"].endswith("(중국)")), None)
+            base = next((v for v in videos if any(h in desc for h in v.get("zh_hint", []))), None)                 or next((v for v in videos if v.get("lang") != "zh"), None)
             kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
-            videos.insert(0, {"id": "zh" + tid[-8:], "title": (base["title"] if base else "새 영상") + "(중국)",
+            videos.insert(0, {"id": "zh" + tid[-8:], "title": "(중국) " + (base["title"] if base else "새 영상"),
                               "posted": f"{kst.month}월 {kst.day}일 {kst:%H:%M}", "tiktok": tid, "lang": "zh"})
             changed = True
             log.append(f"새 영상 등록(틱톡 중국어판): {tid}")
