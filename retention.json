@@ -1,0 +1,40 @@
+{
+ "at": "2026-10-13 14:40",
+ "videos": {
+  "coin": {
+   "len": 68.1,
+   "tt_avg": 22.84,
+   "tt_full": 7.4,
+   "tt_drop": "0:01"
+  },
+  "rope": {
+   "len": 70.9,
+   "tt_avg": 12.93,
+   "tt_full": 2.6,
+   "tt_drop": "0:01"
+  },
+  "nokia": {
+   "len": 76.2,
+   "tt_avg": 13.12,
+   "tt_full": 1.6,
+   "tt_drop": "0:01"
+  },
+  "hamster": {
+   "len": 71.9,
+   "tt_avg": 13.68,
+   "tt_full": 3.2,
+   "tt_drop": "0:02"
+  },
+  "fan": {
+   "len": 70.7,
+   "tt_avg": 10.95,
+   "tt_full": 4.8,
+   "tt_drop": "0:02"
+  },
+  "vjfDlbWmw": {
+   "len": 76.0,
+   "tt_avg": 1.3,
+   "tt_full": 0
+  }
+ }
+}

@@ -232,8 +232,14 @@ def main():
         posts = ig.get("__posts", posts)
     kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
     snap = {"at": kst.strftime("%Y-%m-%d %H:%M"), "followers": followers, "insta_posts": posts, "videos": snap_videos}
-    if last.get("ret_at"):
-        snap["ret_at"] = last["ret_at"]  # 시청 지속 값을 마지막으로 읽은 때
+    # 시청 지속 값(스튜디오 분석 화면에서 읽어 retention.json에 넣어 둔 것)을 기록에 얹는다
+    try:
+        ret = json.load(open(os.path.join(HERE, "retention.json"), encoding="utf-8"))
+        snap["ret_at"] = ret.get("at")
+        for v in snap_videos:
+            v.update(ret.get("videos", {}).get(v["id"], {}))
+    except Exception:
+        pass
     data["snapshots"].append(snap)
     json.dump(data, open(os.path.join(HERE, "data.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     subprocess.run([sys.executable, os.path.join(HERE, "build.py")], check=True)
