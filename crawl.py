@@ -184,7 +184,12 @@ def main():
     log.append("인스타 읽음" if ig else "인스타 건너뜀")
     try:
         ig_codes = list(reversed([k for k in (ig or {}) if not k.startswith("__")]))  # 릴스 탭은 최신이 앞 → 오래된 것부터
-        videos = discover(videos, yt, tiktok_list({v.get("tiktok") for v in videos}), ig_codes, log)
+        try:
+            tt_new = tiktok_list({v.get("tiktok") for v in videos})
+        except Exception as e:
+            tt_new = None
+            log.append(f"틱톡 목록 실패: {e}")
+        videos = discover(videos, yt, tt_new, ig_codes, log)
     except Exception as e:
         log.append(f"새 영상 찾기 실패: {e}")
     snap_videos = []
