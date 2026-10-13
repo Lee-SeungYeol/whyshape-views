@@ -165,6 +165,11 @@
     <div id="line" class="minis"></div>
   </div>
   <div class="card">
+    <h2>틱톡 조회수 변화 (상위 10개)</h2>
+    <div class="note">틱톡 조회수만 따로 본 것입니다. 틱톡 조회수가 많은 순서로 10개까지이고, 큰 숫자 옆 초록색은 최근 24시간 동안 늘어난 양입니다. 그래프마다 세로 눈금이 다릅니다.</div>
+    <div id="line_tt" class="minis"></div>
+  </div>
+  <div class="card">
     <h2>자세한 숫자</h2>
     <div class="note" id="tnote"></div>
     <div style="overflow-x:auto"><table style="min-width:980px"><thead><tr><th>영상</th><th>올린 때</th><th>틱톡 조회</th><th>틱톡 좋아요</th><th>틱톡 댓글</th><th>유튜브 조회</th><th>유튜브 좋아요</th><th>유튜브 댓글</th><th>인스타 조회</th><th>인스타 좋아요</th><th>인스타 댓글</th><th>합계</th></tr></thead><tbody id="tb"></tbody></table></div>
@@ -338,15 +343,15 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
   document.getElementById("heat").innerHTML = h + "</div>";
 })();
 // ---- 꺾은선: 조회수 상위 10개 영상을 작은 그래프 하나씩으로. 기록이 쌓이는 동안 날짜가 바뀌어도 계속 이어진다 ----
-(() => {
+const minis = (el, val, color) => {
   const T = (s) => new Date(s.at.replace(" ", "T")).getTime();
   const t0 = T(snaps[0]), t1 = Math.max(T(now), t0 + 60000);
   const hh = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
-  const top = [...now.videos].sort((a, b) => tot(b) - tot(a)).slice(0, 10);
-  const W = Math.max(280, Math.min(460, (document.getElementById("line").clientWidth || 460) - 26)), H = 150, L = 8, R = 8, TOP = 10, B = 22;
+  const top = [...now.videos].sort((a, b) => val(b) - val(a)).slice(0, 10);
+  const W = Math.max(280, Math.min(460, (document.getElementById(el).clientWidth || 460) - 26)), H = 150, L = 8, R = 8, TOP = 10, B = 22;
   const dayAgo = T(now) - 24 * 3600 * 1000;
-  document.getElementById("line").innerHTML = top.map((v, rank) => {
-    const pts = snaps.map((s) => { const x = s.videos.find((q) => q.id === v.id); return x ? { t: T(s), at: s.at, y: tot(x) } : null; }).filter(Boolean);
+  document.getElementById(el).innerHTML = top.map((v, rank) => {
+    const pts = snaps.map((s) => { const x = s.videos.find((q) => q.id === v.id); return x ? { t: T(s), at: s.at, y: val(x) } : null; }).filter(Boolean);
     const last = pts[pts.length - 1], ymax = Math.max(5, last.y, ...pts.map((p) => p.y)) * 1.1, ymin = 0;
     const X = (t) => L + ((t - t0) / (t1 - t0)) * (W - L - R), Y = (y) => TOP + (1 - (y - ymin) / (ymax - ymin)) * (H - TOP - B);
     const base = [...pts].reverse().find((p) => p.t <= dayAgo) || pts[0];
@@ -354,15 +359,17 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
     // 날짜가 바뀌는 곳마다 세로선
     let days = "";
     for (let d = new Date(t0); d.getTime() <= t1; d = new Date(d.getTime() + 86400000)) { const m = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime(); if (m < t1) days += `<line x1="${X(m)}" x2="${X(m)}" y1="${TOP}" y2="${H - B}" stroke="var(--line)" stroke-width="1"/><text x="${X(m) + 3}" y="${TOP + 10}">${new Date(m).getMonth() + 1}/${new Date(m).getDate()}</text>`; }
-    const dots = pts.map((p) => `<circle cx="${X(p.t)}" cy="${Y(p.y)}" r="${pts.length > 40 ? 0 : 3}" fill="var(--tiktok)" stroke="var(--surface)" stroke-width="1.5"/><rect x="${X(p.t) - 6}" y="${TOP}" width="12" height="${H - TOP - B}" fill="transparent" data-tip="${p.at.slice(5)} · ${n(p.y)}회"/>`).join("");
+    const dots = pts.map((p) => `<circle cx="${X(p.t)}" cy="${Y(p.y)}" r="${pts.length > 40 ? 0 : 3}" fill="${color}" stroke="var(--surface)" stroke-width="1.5"/><rect x="${X(p.t) - 6}" y="${TOP}" width="12" height="${H - TOP - B}" fill="transparent" data-tip="${p.at.slice(5)} · ${n(p.y)}회"/>`).join("");
     return `<div class="mini"><div class="mt"><span class="rk">${rank + 1}</span>${v.title}</div><div class="mv">${n(last.y)}<span class="plus">${gain > 0 ? "+" + n(gain) : ""}</span></div>
       <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${v.title} 조회수 변화">
         <line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="var(--line)"/>${days}
-        <polyline fill="none" stroke="var(--tiktok)" stroke-width="2" stroke-linejoin="round" points="${pts.map((p) => X(p.t) + "," + Y(p.y)).join(" ")}"/>${dots}
+        <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${pts.map((p) => X(p.t) + "," + Y(p.y)).join(" ")}"/>${dots}
         <text x="${L}" y="${H - 6}">${hh(t0)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end">${hh(t1)}</text>
       </svg></div>`;
   }).join("");
-})();
+};
+minis("line", tot, "var(--ink)");                         // 세 곳 합계
+minis("line_tt", (v) => v.tiktok || 0, "var(--tiktok)");  // 틱톡만
 const tip = document.getElementById("tip");
 if (window.__tipBound) return;
 window.__tipBound = true;
