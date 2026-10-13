@@ -111,7 +111,7 @@
   <div class="card">
     <h2>자세한 숫자</h2>
     <div class="note" id="tnote"></div>
-    <div style="overflow-x:auto"><table style="min-width:900px"><thead><tr><th>영상</th><th>올린 때</th><th>틱톡 조회</th><th>틱톡 좋아요</th><th>틱톡 댓글</th><th>유튜브 조회</th><th>유튜브 좋아요</th><th>인스타 조회</th><th>인스타 좋아요</th><th>인스타 댓글</th><th>합계</th></tr></thead><tbody id="tb"></tbody></table></div>
+    <div style="overflow-x:auto"><table style="min-width:980px"><thead><tr><th>영상</th><th>올린 때</th><th>틱톡 조회</th><th>틱톡 좋아요</th><th>틱톡 댓글</th><th>유튜브 조회</th><th>유튜브 좋아요</th><th>유튜브 댓글</th><th>인스타 조회</th><th>인스타 좋아요</th><th>인스타 댓글</th><th>합계</th></tr></thead><tbody id="tb"></tbody></table></div>
   </div>
 </main>
 <div id="tip"></div>
@@ -143,7 +143,7 @@ document.getElementById("bars").innerHTML = ranked.map((v) => {
 document.getElementById("tnote").textContent = prev ? `초록색 숫자는 ${prev.at} 이후 늘어난 양입니다.` : "";
 document.getElementById("tb").innerHTML = ranked.map((v) => {
   const p = prevOf(v.id) || {};
-  return `<tr><td>${v.title}</td><td class="muted">${v.posted}</td><td>${n(v.tiktok)}${plus(v.tiktok, p.tiktok)}</td><td>${n(v.tt_likes)}</td><td>${n(v.tt_comments)}</td><td>${n(v.youtube)}${plus(v.youtube, p.youtube)}</td><td>${n(v.yt_likes)}</td><td class="${v.insta == null ? "muted" : ""}">${v.insta == null ? "못 읽음" : n(v.insta) + plus(v.insta, p.insta)}</td><td>${n(v.ig_likes)}</td><td>${n(v.ig_comments)}</td><td><b>${n((v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0))}</b></td></tr>`;
+  return `<tr><td>${v.title}</td><td class="muted">${v.posted}</td><td>${n(v.tiktok)}${plus(v.tiktok, p.tiktok)}</td><td>${n(v.tt_likes)}</td><td>${n(v.tt_comments)}</td><td>${n(v.youtube)}${plus(v.youtube, p.youtube)}</td><td>${n(v.yt_likes)}</td><td>${n(v.yt_comments)}</td><td class="${v.insta == null ? "muted" : ""}">${v.insta == null ? "못 읽음" : n(v.insta) + plus(v.insta, p.insta)}</td><td>${n(v.ig_likes)}</td><td>${n(v.ig_comments)}</td><td><b>${n((v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0))}</b></td></tr>`;
 }).join("");
 // ---- 전체 조회수 추세: 합계(굵게)와 플랫폼별(가늘게) ----
 (() => {
