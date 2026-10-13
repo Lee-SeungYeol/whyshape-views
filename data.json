@@ -3691,8 +3691,7 @@
      "yt_likes": 0,
      "len": 76.0,
      "tt_avg": 1.3,
-     "tt_full": 0,
-     "yt_comments": 0
+     "tt_full": 0
     },
     {
      "tiktok": 24,
@@ -3719,7 +3718,7 @@
      "tiktok": 29,
      "tt_likes": 1,
      "tt_comments": 0,
-     "youtube": 76,
+     "youtube": 79,
      "insta": 235,
      "yt_likes": 4,
      "ig_likes": 5,
