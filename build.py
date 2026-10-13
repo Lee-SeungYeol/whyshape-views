@@ -84,6 +84,12 @@ HTML = r"""<!doctype html>
   <div class="sub" id="sub"></div>
   <div class="tiles" id="tiles"></div>
   <div class="card">
+    <h2>전체 조회수 추세</h2>
+    <div class="note">모든 영상의 조회수를 합친 값이 시간에 따라 어떻게 늘었는지 보여 줍니다. 굵은 줄이 세 곳을 합친 전체이고, 가는 줄이 플랫폼별입니다. 새 영상이 목록에 들어온 때에는 그만큼 올라갑니다.</div>
+    <div class="legend"><span><i class="dot" style="background:var(--ink)"></i>전체</span><span><i class="dot" style="background:var(--tiktok)"></i>틱톡</span><span><i class="dot" style="background:var(--youtube)"></i>유튜브</span><span><i class="dot" style="background:var(--insta)"></i>인스타그램</span></div>
+    <div id="totals"></div>
+  </div>
+  <div class="card">
     <h2>영상별 조회수 (상위 10개)</h2>
     <div class="note">틱톡, 유튜브, 인스타그램을 합친 길이입니다. 막대에 마우스를 올리면 숫자가 나옵니다.</div>
     <div class="legend"><span><i class="dot" style="background:var(--tiktok)"></i>틱톡</span><span><i class="dot" style="background:var(--youtube)"></i>유튜브</span><span><i class="dot" style="background:var(--insta)"></i>인스타그램</span></div>
@@ -148,6 +154,34 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
   const p = prevOf(v.id) || {};
   return `<tr><td>${v.title}</td><td class="muted">${v.posted}</td><td>${n(v.tiktok)}${plus(v.tiktok, p.tiktok)}</td><td>${n(v.tt_likes)}</td><td>${n(v.tt_comments)}</td><td>${n(v.youtube)}${plus(v.youtube, p.youtube)}</td><td>${n(v.yt_likes)}</td><td class="${v.insta == null ? "muted" : ""}">${v.insta == null ? "못 읽음" : n(v.insta) + plus(v.insta, p.insta)}</td><td>${n(v.ig_likes)}</td><td>${n(v.ig_comments)}</td><td><b>${n((v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0))}</b></td></tr>`;
 }).join("");
+// ---- 전체 조회수 추세: 합계(굵게)와 플랫폼별(가늘게) ----
+(() => {
+  const T = (s) => new Date(s.at.replace(" ", "T")).getTime();
+  const S = [["all", "전체", "var(--ink)", 3], ["tiktok", "틱톡", "var(--tiktok)", 2], ["youtube", "유튜브", "var(--youtube)", 2], ["insta", "인스타그램", "var(--insta)", 2]];
+  const val = (s, k) => s.videos.reduce((a, v) => a + (k === "all" ? tot(v) : v[k] || 0), 0);
+  const t0 = T(snaps[0]), t1 = Math.max(T(now), t0 + 60000);
+  const W = 1000, H = 300, L = 56, R = 160, TOP = 14, B = 30;
+  const ymax = Math.max(10, ...snaps.map((s) => val(s, "all"))) * 1.08;
+  const X = (t) => L + ((t - t0) / (t1 - t0)) * (W - L - R), Y = (y) => TOP + (1 - y / ymax) * (H - TOP - B);
+  const hh = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+  const p10 = Math.pow(10, Math.floor(Math.log10(ymax))), step = ymax / p10 < 2.5 ? p10 / 2 : p10;
+  let g = "";
+  for (let y = 0; y <= ymax; y += step) g += `<line x1="${L}" x2="${W - R}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--line)"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end">${n(y)}</text>`;
+  for (let d = new Date(t0); d.getTime() <= t1; d = new Date(d.getTime() + 86400000)) { const m = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime(); if (m < t1) g += `<line x1="${X(m)}" x2="${X(m)}" y1="${TOP}" y2="${H - B}" stroke="var(--line)"/><text x="${X(m) + 3}" y="${TOP + 10}">${new Date(m).getMonth() + 1}/${new Date(m).getDate()}</text>`; }
+  g += `<text x="${L}" y="${H - 8}">${hh(t0)}</text><text x="${W - R}" y="${H - 8}" text-anchor="end">${hh(t1)}</text>`;
+  const ends = S.map(([k, name, color]) => ({ k, name, v: val(now, k) })).map((e) => ({ ...e, y: Y(e.v) })).sort((a, b) => b.y - a.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i - 1].y - ends[i].y < 17) ends[i].y = ends[i - 1].y - 17;
+  S.forEach(([k, name, color, w]) => {
+    const pts = snaps.map((s) => ({ t: T(s), at: s.at, y: val(s, k) }));
+    g += `<polyline fill="none" stroke="${color}" stroke-width="${w}" stroke-linejoin="round" points="${pts.map((p) => X(p.t) + "," + Y(p.y)).join(" ")}"/>`;
+    const last = pts[pts.length - 1];
+    g += `<circle cx="${X(last.t)}" cy="${Y(last.y)}" r="4" fill="${color}" stroke="var(--surface)" stroke-width="2"/>`;
+    if (k === "all") pts.forEach((p) => { g += `<rect x="${X(p.t) - 5}" y="${TOP}" width="10" height="${H - TOP - B}" fill="transparent" data-tip="${p.at.slice(5)} · 전체 ${n(p.y)}회"/>`; });
+    const e = ends.find((x) => x.k === k);
+    g += `<text class="lab" x="${W - R + 10}" y="${e.y + 4}">${name} ${n(e.v)}</text>`;
+  });
+  document.getElementById("totals").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="전체 조회수의 시간 변화">${g}</svg>`;
+})();
 // ---- 구독자·팔로워 변화: 세 줄 꺾은선 ----
 (() => {
   const T = (s) => new Date(s.at.replace(" ", "T")).getTime();
