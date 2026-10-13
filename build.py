@@ -291,7 +291,7 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
     g += `<text class="lab" x="${W - R + 8}" y="${e.y + 4}">${W < 600 ? name.replace("인스타그램", "인스타") : name} +${n(e.v)}</text>`;
   });
   document.getElementById("d1").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="최근 24시간 동안 늘어난 조회수의 변화">${g}</svg>`;
-  document.getElementById("d1note").textContent = "각 시점에서 그 전 24시간 동안 조회수가 얼마나 늘었는지입니다. 누적 그래프는 무조건 오르지만 이 줄은 채널이 식으면 내려가므로, 줄이 올라가면 채널이 성장하는 중이고 내려가면 식는 중입니다. 24시간으로 묶어서 낮과 밤의 차이는 지워집니다." + (full > t1 ? " 지금은 기록이 24시간이 안 돼서 점선(기록 시작 이후 늘어난 양)으로 나오고, " + hh(full) + "부터 실선이 됩니다. 그 전까지는 올라가기만 하므로 추세로 읽으면 안 됩니다." : " 점선은 기록이 24시간이 안 됐던 구간입니다.") + ` 지금 값: 전체 +${n(last.all)}회.`;
+  document.getElementById("d1note").textContent = "각 시점에서 그 전 24시간 동안 조회수가 얼마나 늘었는지입니다. 누적 그래프는 무조건 오르지만 이 줄은 채널이 식으면 내려가므로, 줄이 올라가면 채널이 성장하는 중이고 내려가면 식는 중입니다. 24시간으로 묶어서 낮과 밤의 차이는 지워집니다.";
 })();
 // ---- 구독자·팔로워 변화: 세 줄 꺾은선 ----
 (() => {
