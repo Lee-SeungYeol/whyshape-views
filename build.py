@@ -12,7 +12,6 @@ HTML = r"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="120">
 <title>왜이모양이야 조회수</title>
 <style>
   :root {
@@ -114,7 +113,8 @@ HTML = r"""<!doctype html>
 </main>
 <div id="tip"></div>
 <script>
-const DATA = __DATA__;
+const EMBED = __DATA__;
+function render(DATA) {
 const snaps = DATA.snapshots, now = snaps[snaps.length - 1], prev = snaps.length > 1 ? snaps[snaps.length - 2] : null;
 const tot = (v) => (v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0);
 const n = (x) => (x == null ? "–" : x.toLocaleString("ko-KR"));
@@ -122,7 +122,7 @@ const prevOf = (id) => (prev ? prev.videos.find((v) => v.id === id) : null);
 const plus = (a, b) => (b != null && a != null && a - b > 0 ? `<span class="plus">+${n(a - b)}</span>` : "");
 const sum = (k) => now.videos.reduce((s, v) => s + (v[k] || 0), 0);
 const psum = (k) => (prev ? prev.videos.reduce((s, v) => s + (v[k] || 0), 0) : null);
-document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 그 전: ${prev.at}` : "") + " · 이 화면은 2분마다 스스로 새로 고칩니다. 수치는 Claude가 켜져 있는 동안 30분마다 다시 읽습니다.";
+document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 그 전: ${prev.at}` : "") + " · 이 화면은 3분마다 최신 값을 스스로 가져옵니다.";
 const tiles = [
   ["전체 조회수", sum("tiktok") + sum("youtube") + sum("insta"), prev ? psum("tiktok") + psum("youtube") + psum("insta") : null, null, "틱톡 + 유튜브 + 인스타그램"],
   ["틱톡 조회수", sum("tiktok"), psum("tiktok"), "var(--tiktok)", `팔로워 ${n(now.followers.tiktok)}`],
@@ -210,12 +210,25 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
   }).join("");
 })();
 const tip = document.getElementById("tip");
+if (window.__tipBound) return;
+window.__tipBound = true;
 document.addEventListener("mousemove", (e) => {
   const s = e.target.closest("[data-tip]");
   if (!s) { tip.style.display = "none"; return; }
   tip.textContent = s.dataset.tip; tip.style.display = "block";
   tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = e.clientY - 34 + "px";
 });
+}
+render(EMBED);
+// 깃허브에 올라간 최신 기록을 직접 가져와 다시 그린다(3분마다). 실패하면 화면에 들어 있는 값을 그대로 둔다.
+async function live() {
+  try {
+    const r = await fetch("https://api.github.com/repos/Lee-SeungYeol/whyshape-views/contents/data.json", { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store" });
+    if (r.ok) render(await r.json());
+  } catch (e) {}
+}
+live();
+setInterval(live, 180000);
 </script>
 </body>
 </html>
