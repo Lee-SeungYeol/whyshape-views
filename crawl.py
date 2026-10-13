@@ -57,6 +57,13 @@ def tiktok(video_id):
     return {"tiktok": pick("playCount"), "tt_likes": pick("diggCount"), "tt_comments": pick("commentCount")}
 
 
+def tiktok_desc(video_id):
+    """틱톡 영상의 설명 글(올릴 때 적은 문구)."""
+    html = get(f"https://www.tiktok.com/@{TIKTOK_USER}/video/{video_id}")
+    m = re.search(r'"desc":"((?:[^"\\]|\\.)*)"', html)
+    return json.loads('"' + m.group(1) + '"') if m else ""
+
+
 def tiktok_followers():
     html = get(f"https://www.tiktok.com/@{TIKTOK_USER}")
     m = re.search(r'"followerCount":\s*(\d+)', html)
@@ -157,7 +164,23 @@ def discover(videos, yt_ids, tt_ids, ig_codes, log):
         changed = True
         log.append(f"새 영상 등록(유튜브): {title or vid}")
     for tid in tt_ids or []:
-        if tid not in known["tiktok"]:
+        if tid in known["tiktok"]:
+            continue
+        # 틱톡에만 올리는 외국어판(지금은 중국어)은 원본과 따로 한 줄을 만든다: "한글 제목(중국)"
+        desc = ""
+        try:
+            desc = tiktok_desc(tid)
+        except Exception as e:
+            log.append(f"틱톡 설명 읽기 실패 {tid}: {e}")
+        is_zh = bool(re.search(r"[一-鿿]", desc)) and not re.search(r"[가-힣]", desc)
+        if is_zh:
+            base = next((v for v in videos if any(h in desc for h in v.get("zh_hint", []))), None)                 or next((v for v in videos if not v["title"].endswith("(중국)")), None)
+            kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+            videos.insert(0, {"id": "zh" + tid[-8:], "title": (base["title"] if base else "새 영상") + "(중국)",
+                              "posted": f"{kst.month}월 {kst.day}일 {kst:%H:%M}", "tiktok": tid, "lang": "zh"})
+            changed = True
+            log.append(f"새 영상 등록(틱톡 중국어판): {tid}")
+        else:
             fill("tiktok", tid)
             log.append(f"새 영상 등록(틱톡): {tid}")
     for code in ig_codes or []:
