@@ -97,29 +97,28 @@ def instagram():
         out["__followers"], out["__posts"] = num(m.group(1)), num(m.group(2))
     return out if any(not k.startswith("__") for k in out) else None
 
-TT_STAMP = os.path.join(os.path.expanduser("~"), "tools", "whyshape-tiktok-last.txt")
-TT_EVERY = 6 * 60
-
-
-def tiktok_list():
-    """PC에서만: 화면 없는 크롬으로 틱톡 프로필을 열어 올라온 영상 번호 목록을 읽는다(로그인 불필요). 못 읽으면 None."""
+def tiktok_list(known):
+    """틱톡의 공개 임베드 페이지에서 올라온 영상 번호를 읽는다(로그인·크롬 불필요, 깃허브에서도 된다).
+    이미 아는 번호는 그대로 두고, 처음 보는 번호는 그 영상 페이지에서 조회수가 읽힐 때만 영상으로 인정한다."""
     import time
-    if not (os.path.isdir(IG_PROFILE) and os.path.isfile(CHROME)):
-        return None
+    stamp = os.path.join(HERE, ".tiktok-list-last")
     try:
-        if time.time() - float(open(TT_STAMP).read()) < TT_EVERY:
+        if time.time() - float(open(stamp).read()) < 15 * 60:  # 자주 열면 429로 막힌다. 15분에 한 번만.
             return None
     except Exception:
         pass
-    try:
-        html = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--user-data-dir=" + IG_PROFILE, "--window-size=1200,2400",
-                               "--virtual-time-budget=15000", "--dump-dom", f"https://www.tiktok.com/@{TIKTOK_USER}"],
-                              capture_output=True, timeout=90).stdout.decode("utf-8", "replace")
-    except Exception:
-        return None
-    open(TT_STAMP, "w").write(str(time.time()))
-    ids = sorted(set(re.findall(r"/video/(\d{15,})", html)))  # 번호가 클수록 나중에 올린 것
-    return ids or None
+    open(stamp, "w").write(str(time.time()))
+    html = get(f"https://www.tiktok.com/embed/@{TIKTOK_USER}")
+    out = []
+    for tid in sorted(set(re.findall(r"(?<!\d)(\d{19})(?!\d)", html))):  # 번호가 클수록 나중에 올린 것
+        if tid in known:
+            continue
+        try:
+            if tiktok(tid).get("tiktok") is not None:
+                out.append(tid)
+        except Exception:
+            pass
+    return out
 
 
 def discover(videos, yt_ids, tt_ids, ig_codes, log):
@@ -185,7 +184,7 @@ def main():
     log.append("인스타 읽음" if ig else "인스타 건너뜀")
     try:
         ig_codes = list(reversed([k for k in (ig or {}) if not k.startswith("__")]))  # 릴스 탭은 최신이 앞 → 오래된 것부터
-        videos = discover(videos, yt, tiktok_list(), ig_codes, log)
+        videos = discover(videos, yt, tiktok_list({v.get("tiktok") for v in videos}), ig_codes, log)
     except Exception as e:
         log.append(f"새 영상 찾기 실패: {e}")
     snap_videos = []
