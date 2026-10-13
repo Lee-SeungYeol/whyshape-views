@@ -1,0 +1,226 @@
+# -*- coding: utf-8 -*-
+"""기록.json(조회 시점별 수치)을 읽어 조회수.html 한 장을 만든다.
+실행: python 대시보드/만들기.py
+수치는 Claude가 크롬으로 틱톡 스튜디오·유튜브 스튜디오·인스타그램을 읽어 기록.json에 덧붙인다."""
+import json, os
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+data = json.load(open(os.path.join(HERE, "data.json"), encoding="utf-8"))
+
+HTML = r"""<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="120">
+<title>왜이모양이야 조회수</title>
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --line: #e4e3df;
+    --tiktok: #2a78d6; --youtube: #eb6834; --insta: #1baf7a; --up: #0ca30c;
+    --v1: #6250d6; --v2: #eda100; --v3: #e87ba4; --v4: #008300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #c3c2b7; --line: #33332f;
+      --tiktok: #3987e5; --youtube: #d95926; --insta: #199e70;
+      --v1: #9085e9; --v2: #c98500; --v3: #d55181; --v4: #008300; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: "Malgun Gothic", "Segoe UI", sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .sub { color: var(--ink2); font-size: 14px; margin-bottom: 22px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 26px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .tile .k { font-size: 14px; color: var(--ink2); display: flex; align-items: center; gap: 8px; }
+  .tile .v { font-size: 38px; font-weight: 700; line-height: 1.15; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .tile .d { font-size: 13px; color: var(--ink2); margin-top: 4px; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 22px; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  .note { color: var(--ink2); font-size: 13px; margin-bottom: 14px; }
+  .legend { display: flex; gap: 18px; font-size: 13px; color: var(--ink2); margin-bottom: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .row { display: grid; grid-template-columns: minmax(150px, 280px) 1fr 70px; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .name { font-size: 15px; font-weight: 700; }
+  .when { font-size: 12px; color: var(--ink2); font-weight: 400; }
+  .bar { display: flex; gap: 2px; height: 22px; }
+  .seg { height: 100%; border-radius: 4px; min-width: 2px; position: relative; }
+  .seg:hover { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .tot { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 9px 8px; border-top: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: var(--ink2); font-weight: 400; border-top: 0; }
+  th:first-child, td:first-child { text-align: left; }
+  tbody tr:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+  .plus { color: var(--up); font-size: 12px; margin-left: 4px; }
+  .muted { color: var(--ink2); }
+  .prow { display: grid; grid-template-columns: 110px 1fr 250px; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .prow:first-child { border-top: 0; }
+  .pname { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .ptrack { height: 22px; background: color-mix(in srgb, var(--ink) 6%, transparent); border-radius: 4px; }
+  .pfill { height: 100%; border-radius: 4px; min-width: 2px; }
+  .pinfo { font-size: 13px; color: var(--ink2); text-align: right; }
+  .pinfo b { color: var(--ink); font-size: 15px; }
+  .hm { display: grid; gap: 6px; align-items: center; font-size: 14px; }
+  .hm .hh { color: var(--ink2); font-size: 13px; }
+  .cell { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+  .sw { width: 34px; height: 22px; border-radius: 4px; border: 1px solid var(--line); flex: none; }
+  .minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .mini { border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px 4px; }
+  .mt { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rk { display: inline-block; min-width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 6px; background: var(--line); font-size: 12px; margin-right: 8px; }
+  .mv { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0 2px; }
+  .mv .plus { font-size: 13px; }
+  svg text { font-family: inherit; fill: var(--ink2); font-size: 12px; }
+  svg .lab { fill: var(--ink); font-size: 13px; font-weight: 700; }
+  #tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--surface); font-size: 13px; padding: 6px 10px; border-radius: 8px; display: none; z-index: 5; white-space: nowrap; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>왜이모양이야 조회수</h1>
+  <div class="sub" id="sub"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="card">
+    <h2>영상별 조회수 (상위 10개)</h2>
+    <div class="note">틱톡, 유튜브, 인스타그램을 합친 길이입니다. 막대에 마우스를 올리면 숫자가 나옵니다.</div>
+    <div class="legend"><span><i class="dot" style="background:var(--tiktok)"></i>틱톡</span><span><i class="dot" style="background:var(--youtube)"></i>유튜브</span><span><i class="dot" style="background:var(--insta)"></i>인스타그램</span></div>
+    <div id="bars"></div>
+  </div>
+  <div class="card">
+    <h2>지금 오르는 영상</h2>
+    <div class="note">최근 1시간 동안 조회수가 얼마나 늘었는지로 순서를 매겼습니다. 막대는 최근 1시간에 늘어난 양이고, 옆의 말은 그 전 1시간과 비교한 흐름입니다. 기록이 1시간보다 짧으면 있는 기간으로 환산합니다. 앞으로 더 오를지에 대한 어림이지 보장은 아닙니다.</div>
+    <div id="hot"></div>
+  </div>
+  <div class="card">
+    <h2>플랫폼별 세기</h2>
+    <div class="note">어느 플랫폼에서 조회수가 많이 나오는지, 영상마다 어디서 강한지 보여 줍니다. 아래 표의 네모는 진할수록 조회수가 많다는 뜻입니다.</div>
+    <div id="plat"></div>
+    <div id="heat" style="margin-top:18px"></div>
+  </div>
+  <div class="card">
+    <h2>조회수 변화 (상위 10개)</h2>
+    <div class="note">조회수가 많은 순서로 10개까지, 영상마다 세 곳을 합친 조회수가 어떻게 늘었는지 보여 줍니다. 기록은 날짜가 바뀌어도 계속 이어지고, 큰 숫자 옆 초록색은 최근 24시간 동안 늘어난 양입니다. 그래프마다 세로 눈금이 다릅니다.</div>
+    <div id="line" class="minis"></div>
+  </div>
+  <div class="card">
+    <h2>자세한 숫자</h2>
+    <div class="note" id="tnote"></div>
+    <table><thead><tr><th>영상</th><th>올린 때</th><th>틱톡 조회</th><th>틱톡 좋아요</th><th>틱톡 댓글</th><th>유튜브 조회</th><th>인스타 조회</th><th>합계</th></tr></thead><tbody id="tb"></tbody></table>
+  </div>
+</main>
+<div id="tip"></div>
+<script>
+const DATA = __DATA__;
+const snaps = DATA.snapshots, now = snaps[snaps.length - 1], prev = snaps.length > 1 ? snaps[snaps.length - 2] : null;
+const tot = (v) => (v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0);
+const n = (x) => (x == null ? "–" : x.toLocaleString("ko-KR"));
+const prevOf = (id) => (prev ? prev.videos.find((v) => v.id === id) : null);
+const plus = (a, b) => (b != null && a != null && a - b > 0 ? `<span class="plus">+${n(a - b)}</span>` : "");
+const sum = (k) => now.videos.reduce((s, v) => s + (v[k] || 0), 0);
+const psum = (k) => (prev ? prev.videos.reduce((s, v) => s + (v[k] || 0), 0) : null);
+document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 그 전: ${prev.at}` : "") + " · 이 화면은 2분마다 스스로 새로 고칩니다. 수치는 Claude가 켜져 있는 동안 30분마다 다시 읽습니다.";
+const tiles = [
+  ["전체 조회수", sum("tiktok") + sum("youtube") + sum("insta"), prev ? psum("tiktok") + psum("youtube") + psum("insta") : null, null, "틱톡 + 유튜브 + 인스타그램"],
+  ["틱톡 조회수", sum("tiktok"), psum("tiktok"), "var(--tiktok)", `팔로워 ${n(now.followers.tiktok)}`],
+  ["유튜브 조회수", sum("youtube"), psum("youtube"), "var(--youtube)", `구독자 ${n(now.followers.youtube)}`],
+  ["인스타그램 조회수", sum("insta"), psum("insta"), "var(--insta)", `팔로워 ${n(now.followers.instagram)} · 게시물 ${n(now.insta_posts)}`],
+];
+document.getElementById("tiles").innerHTML = tiles.map(([k, v, p, c, d]) => `<div class="tile"><div class="k">${c ? `<i class="dot" style="background:${c}"></i>` : ""}${k}</div><div class="v">${n(v)}</div><div class="d">${p != null && v - p > 0 ? `<span class="plus" style="margin-left:0">+${n(v - p)}</span> · ` : ""}${d}</div></div>`).join("");
+const max = Math.max(1, ...now.videos.map(tot));
+const ranked = [...now.videos].sort((a, b) => tot(b) - tot(a)).slice(0, 10);
+document.getElementById("bars").innerHTML = ranked.map((v) => {
+  const t = v.tiktok || 0, y = v.youtube || 0, g = v.insta || 0;
+  const seg = (val, color, label) => (val > 0 ? `<div class="seg" style="width:${(val / max) * 100}%;background:${color}" data-tip="${label} ${n(val)}회"></div>` : "");
+  return `<div class="row"><div class="name">${v.title}<div class="when">${v.posted}</div></div><div class="bar">${seg(t, "var(--tiktok)", "틱톡")}${seg(y, "var(--youtube)", "유튜브")}${seg(g, "var(--insta)", "인스타그램")}</div><div class="tot">${n(t + y + g)}</div></div>`;
+}).join("");
+document.getElementById("tnote").textContent = prev ? `초록색 숫자는 ${prev.at} 이후 늘어난 양입니다.` : "";
+document.getElementById("tb").innerHTML = ranked.map((v) => {
+  const p = prevOf(v.id) || {};
+  return `<tr><td>${v.title}</td><td class="muted">${v.posted}</td><td>${n(v.tiktok)}${plus(v.tiktok, p.tiktok)}</td><td>${n(v.tt_likes)}</td><td>${n(v.tt_comments)}</td><td>${n(v.youtube)}${plus(v.youtube, p.youtube)}</td><td class="${v.insta == null ? "muted" : ""}">${v.insta == null ? "못 읽음" : n(v.insta) + plus(v.insta, p.insta)}</td><td><b>${n((v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0))}</b></td></tr>`;
+}).join("");
+// ---- 지금 오르는 영상: 최근 1시간 증가량과 그 전 1시간 대비 흐름 ----
+(() => {
+  const T = (s) => new Date(s.at.replace(" ", "T")).getTime(), H = 3600000, tn = T(now);
+  const at = (id, t) => { let best = null; for (const s of snaps) { if (T(s) <= t) { const v = s.videos.find((q) => q.id === id); if (v) best = { t: T(s), y: tot(v) }; } } return best; };
+  const first = (id) => { for (const s of snaps) { const v = s.videos.find((q) => q.id === id); if (v) return { t: T(s), y: tot(v) }; } return null; };
+  const rows = now.videos.map((v) => {
+    const cur = tot(v), a = at(v.id, tn - H) || first(v.id), b = at(v.id, tn - 2 * H);
+    const span = Math.max((tn - a.t) / H, 1 / 12), rate = (cur - a.y) / span;         // 시간당 증가
+    const prevRate = b && a.t > b.t ? (a.y - b.y) / ((a.t - b.t) / H) : null;
+    let flow = "지켜보는 중", cls = "muted";
+    if (rate <= 0) { flow = "멈춤"; }
+    else if (prevRate == null) { flow = "오르는 중"; cls = "up"; }
+    else if (rate > prevRate * 1.2) { flow = "더 빨라짐"; cls = "up"; }
+    else if (rate < prevRate * 0.6) { flow = "느려짐"; }
+    else { flow = "꾸준히 오름"; cls = "up"; }
+    return { v, rate, flow, cls, cur };
+  }).sort((x, y) => y.rate - x.rate).slice(0, 10);
+  const mx = Math.max(1, ...rows.map((r) => r.rate));
+  document.getElementById("hot").innerHTML = rows.map((r, i) => `<div class="prow" style="grid-template-columns: minmax(150px, 280px) 1fr 210px"><div class="pname"><span class="rk">${i + 1}</span>${r.v.title}</div><div class="ptrack"><div class="pfill" style="width:${Math.max(0, (r.rate / mx) * 100)}%;background:var(--up)" data-tip="${r.v.title} · 시간당 +${n(Math.round(r.rate))}회"></div></div><div class="pinfo"><b>시간당 +${n(Math.round(r.rate))}</b> · <span class="${r.cls === "up" ? "plus" : "muted"}" style="margin-left:0;font-size:13px">${r.flow}</span><br>지금까지 ${n(r.cur)}회</div></div>`).join("");
+})();
+// ---- 플랫폼별 세기: 점유율 막대 + 영상×플랫폼 표 ----
+(() => {
+  const P = [["tiktok", "틱톡", "var(--tiktok)"], ["youtube", "유튜브", "var(--youtube)"], ["insta", "인스타그램", "var(--insta)"]];
+  const all = P.reduce((a, [k]) => a + sum(k), 0) || 1;
+  document.getElementById("plat").innerHTML = P.map(([k, name, color]) => {
+    const total = sum(k), share = (total / all) * 100, posted = now.videos.filter((v) => v[k] != null).length || 1;
+    const best = [...now.videos].sort((a, b) => (b[k] || 0) - (a[k] || 0))[0];
+    return `<div class="prow"><div class="pname"><i class="dot" style="background:${color}"></i>${name}</div><div class="ptrack"><div class="pfill" style="width:${share}%;background:${color}" data-tip="${name} ${n(total)}회 · 전체의 ${share.toFixed(0)}%"></div></div><div class="pinfo"><b>${share.toFixed(0)}%</b> · 영상당 평균 ${n(Math.round(total / posted))}회<br>가장 잘된 영상: ${best.title} (${n(best[k] || 0)})</div></div>`;
+  }).join("");
+  // 진하기: 한 가지 색(파랑)의 밝은 단계에서 어두운 단계로
+  const ramp = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"];
+  const top = [...now.videos].sort((a, b) => tot(b) - tot(a)).slice(0, 10);
+  const mx = Math.max(1, ...top.flatMap((v) => P.map(([k]) => v[k] || 0)));
+  const sw = (val) => (val > 0 ? ramp[Math.min(ramp.length - 1, Math.floor(Math.sqrt(val / mx) * ramp.length))] : "transparent");
+  let h = `<div class="hm" style="grid-template-columns: minmax(150px, 1.6fr) repeat(3, 1fr) 1.3fr"><div class="hh">영상</div>${P.map(([, name]) => `<div class="hh">${name}</div>`).join("")}<div class="hh">가장 강한 곳</div>`;
+  top.forEach((v) => {
+    const strong = [...P].sort((a, b) => (v[b[0]] || 0) - (v[a[0]] || 0))[0];
+    h += `<div><b>${v.title}</b></div>` + P.map(([k, name]) => `<div class="cell" data-tip="${v.title} · ${name} ${n(v[k] || 0)}회"><i class="sw" style="background:${sw(v[k] || 0)}"></i>${n(v[k] || 0)}</div>`).join("") + `<div class="cell">${tot(v) > 0 ? `<i class="dot" style="background:${strong[2]}"></i>${strong[1]} ${Math.round(((v[strong[0]] || 0) / tot(v)) * 100)}%` : "–"}</div>`;
+  });
+  document.getElementById("heat").innerHTML = h + "</div>";
+})();
+// ---- 꺾은선: 조회수 상위 10개 영상을 작은 그래프 하나씩으로. 기록이 쌓이는 동안 날짜가 바뀌어도 계속 이어진다 ----
+(() => {
+  const T = (s) => new Date(s.at.replace(" ", "T")).getTime();
+  const t0 = T(snaps[0]), t1 = Math.max(T(now), t0 + 60000);
+  const hh = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+  const top = [...now.videos].sort((a, b) => tot(b) - tot(a)).slice(0, 10);
+  const W = 460, H = 150, L = 8, R = 8, TOP = 10, B = 22;
+  const dayAgo = T(now) - 24 * 3600 * 1000;
+  document.getElementById("line").innerHTML = top.map((v, rank) => {
+    const pts = snaps.map((s) => { const x = s.videos.find((q) => q.id === v.id); return x ? { t: T(s), at: s.at, y: tot(x) } : null; }).filter(Boolean);
+    const last = pts[pts.length - 1], ymax = Math.max(5, last.y, ...pts.map((p) => p.y)) * 1.1, ymin = 0;
+    const X = (t) => L + ((t - t0) / (t1 - t0)) * (W - L - R), Y = (y) => TOP + (1 - (y - ymin) / (ymax - ymin)) * (H - TOP - B);
+    const base = [...pts].reverse().find((p) => p.t <= dayAgo) || pts[0];
+    const gain = last.y - base.y;
+    // 날짜가 바뀌는 곳마다 세로선
+    let days = "";
+    for (let d = new Date(t0); d.getTime() <= t1; d = new Date(d.getTime() + 86400000)) { const m = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime(); if (m < t1) days += `<line x1="${X(m)}" x2="${X(m)}" y1="${TOP}" y2="${H - B}" stroke="var(--line)" stroke-width="1"/><text x="${X(m) + 3}" y="${TOP + 10}">${new Date(m).getMonth() + 1}/${new Date(m).getDate()}</text>`; }
+    const dots = pts.map((p) => `<circle cx="${X(p.t)}" cy="${Y(p.y)}" r="${pts.length > 40 ? 0 : 3}" fill="var(--tiktok)" stroke="var(--surface)" stroke-width="1.5"/><rect x="${X(p.t) - 6}" y="${TOP}" width="12" height="${H - TOP - B}" fill="transparent" data-tip="${p.at.slice(5)} · ${n(p.y)}회"/>`).join("");
+    return `<div class="mini"><div class="mt"><span class="rk">${rank + 1}</span>${v.title}</div><div class="mv">${n(last.y)}<span class="plus">${gain > 0 ? "+" + n(gain) : ""}</span></div>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${v.title} 조회수 변화">
+        <line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="var(--line)"/>${days}
+        <polyline fill="none" stroke="var(--tiktok)" stroke-width="2" stroke-linejoin="round" points="${pts.map((p) => X(p.t) + "," + Y(p.y)).join(" ")}"/>${dots}
+        <text x="${L}" y="${H - 6}">${hh(t0)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end">${hh(t1)}</text>
+      </svg></div>`;
+  }).join("");
+})();
+const tip = document.getElementById("tip");
+document.addEventListener("mousemove", (e) => {
+  const s = e.target.closest("[data-tip]");
+  if (!s) { tip.style.display = "none"; return; }
+  tip.textContent = s.dataset.tip; tip.style.display = "block";
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = e.clientY - 34 + "px";
+});
+</script>
+</body>
+</html>
+"""
+
+out = os.path.join(HERE, "index.html")
+open(out, "w", encoding="utf-8").write(HTML.replace("__DATA__", json.dumps(data, ensure_ascii=False)))
+print("written", out)

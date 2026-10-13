@@ -1,0 +1,26 @@
+name: 조회수 갱신
+on:
+  schedule:
+    - cron: "3,33 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python crawl.py
+      - run: |
+          git config user.name "whyshape-bot"
+          git config user.email "191818319+Lee-SeungYeol@users.noreply.github.com"
+          git add -A
+          git commit -q -m "자동 갱신" || exit 0
+          git pull -q --rebase
+          git push -q
