@@ -353,11 +353,21 @@ let LAST = EMBED;
 render(EMBED);
 let __rz; window.addEventListener("resize", () => { clearTimeout(__rz); __rz = setTimeout(() => render(LAST), 200); });
 // 깃허브에 올라간 최신 기록을 직접 가져와 다시 그린다(3분마다). 실패하면 화면에 들어 있는 값을 그대로 둔다.
+// raw 주소를 먼저 쓴다. api.github.com은 로그인 없이 한 시간에 60번까지만 되어, 여러 기기에서 열어 두면 막힌다.
 async function live() {
-  try {
-    const r = await fetch("https://api.github.com/repos/Lee-SeungYeol/whyshape-views/contents/data.json", { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store" });
-    if (r.ok) { LAST = await r.json(); render(LAST); }
-  } catch (e) {}
+  const tries = [
+    ["https://raw.githubusercontent.com/Lee-SeungYeol/whyshape-views/main/data.json?t=" + Date.now(), {}],
+    ["https://api.github.com/repos/Lee-SeungYeol/whyshape-views/contents/data.json", { headers: { Accept: "application/vnd.github.raw+json" } }],
+  ];
+  for (const [url, opt] of tries) {
+    try {
+      const r = await fetch(url, { ...opt, cache: "no-store" });
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d.snapshots && d.snapshots.length >= LAST.snapshots.length) { LAST = d; render(LAST); }
+      return;
+    } catch (e) {}
+  }
 }
 live();
 setInterval(live, 180000);
