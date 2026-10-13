@@ -158,7 +158,7 @@ HTML = r"""<!doctype html>
     <div id="hot"></div>
   </div>
   <div class="card">
-    <h2>얼마나 오래 보나</h2>
+    <h2>얼마나 오래 보나 (틱톡)</h2>
     <div class="note" id="retnote"></div>
     <div id="ret"></div>
   </div>
@@ -312,7 +312,7 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
 })();
 // ---- 얼마나 오래 보나: 평균 시청 시간(영상 길이 대비 막대)과 끝까지 본 비율 ----
 (() => {
-  const rows = [...now.videos].filter((v) => v.tt_avg != null || v.yt_avg != null || v.len).sort((a, b) => (b.tt_full ?? -1) - (a.tt_full ?? -1));
+  const rows = [...now.videos].filter((v) => v.tt_avg != null).sort((a, b) => (b.tt_full ?? -1) - (a.tt_full ?? -1));
   const sec = (x) => (x == null ? null : (Math.round(x * 10) / 10).toLocaleString("ko-KR") + "초");
   const pct = (x) => (x == null ? null : (Math.round(x * 10) / 10).toLocaleString("ko-KR") + "%");
   const wait = '<span class="muted">집계 중</span>';
@@ -321,9 +321,9 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
     const few = views != null && views < 20 ? ' <span class="muted">(조회 ' + n(views) + '회라 참고만)</span>' : "";
     return `<div class="rline"><div class="rp"><i class="dot" style="background:${color}"></i>${name}</div><div class="ptrack" data-tip="${name} · 평균 ${sec(avg) || "집계 중"} / 영상 ${len ? Math.round(len) + "초" : "?"}"><div class="pfill" style="width:${share}%;background:${color}"></div></div><div class="rinfo">${avg == null ? wait : `<b>${sec(avg)}</b>${len ? " · 영상의 " + pct((avg / len) * 100) : ""}`}</div><div class="rinfo">${full == null ? (avg == null ? "" : wait) : `끝까지 <b>${pct(full)}</b>${few}`}</div><div class="rinfo">${drop ? "가장 많이 나간 때 <b>" + drop + "</b>" : ""}</div></div>`;
   };
-  document.getElementById("ret").innerHTML = rows.map((v) => `<div class="rrow"><div class="rname">${v.title}${v.len ? ` <span class="when">${Math.round(v.len)}초</span>` : ""}</div>${line("틱톡", "var(--tiktok)", v.tt_avg, v.tt_full, v.tt_drop, v.len, v.tiktok)}${line("유튜브", "var(--youtube)", v.yt_avg, v.yt_full, v.yt_drop, v.len, v.youtube)}</div>`).join("") || '<div class="muted">아직 읽은 값이 없습니다.</div>';
+  document.getElementById("ret").innerHTML = rows.map((v) => `<div class="rrow"><div class="rname">${v.title}${v.len ? ` <span class="when">${Math.round(v.len)}초</span>` : ""}</div>${line("틱톡", "var(--tiktok)", v.tt_avg, v.tt_full, v.tt_drop, v.len, v.tiktok)}</div>`).join("") || '<div class="muted">아직 읽은 값이 없습니다.</div>';
   const at = now.ret_at || [...snaps].reverse().map((x) => x.ret_at).find(Boolean);
-  document.getElementById("retnote").textContent = "막대는 평균 시청 시간이 영상 길이의 얼마인지입니다. 끝까지 본 비율이 높은 순서로 놓았습니다. 이 칸은 스튜디오 분석 화면에서 읽어 넣는 값이라 3분마다 바뀌지 않습니다" + (at ? `(마지막으로 읽은 때: ${at}).` : ".") + " 유튜브는 올린 뒤 이틀쯤 지나야 나옵니다.";
+  document.getElementById("retnote").textContent = "틱톡 기준입니다. 막대는 평균 시청 시간이 영상 길이의 얼마인지이고, 끝까지 본 비율이 높은 순서로 놓았습니다. 틱톡 스튜디오 분석 화면에서 읽어 넣는 값이라 3분마다 바뀌지 않습니다" + (at ? `(마지막으로 읽은 때: ${at}).` : ".");
 })();
 // ---- 플랫폼별 세기: 점유율 막대 + 영상×플랫폼 표 ----
 (() => {
