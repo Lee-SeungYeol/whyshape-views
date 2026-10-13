@@ -30,6 +30,14 @@ if new.get("retention"):
         ret["videos"].setdefault(k, {}).update(val)
     ret["at"] = snap["at"]
     json.dump(ret, open(RET, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+# 크롤러가 스스로 못 읽는 값(유튜브 댓글 수)도 여기에 보관해야 다음 크롤링 기록에서 사라지지 않는다
+keep = False
+for k, val in new.get("videos", {}).items():
+    if "yt_comments" in val:
+        ret["videos"].setdefault(k, {})["yt_comments"] = val["yt_comments"]
+        keep = True
+if keep:
+    json.dump(ret, open(RET, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 if ret.get("at"):
     snap["ret_at"] = ret["at"]
 for v in videos:

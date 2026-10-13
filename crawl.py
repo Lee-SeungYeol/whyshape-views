@@ -98,7 +98,9 @@ def instagram():
     for code, body in re.findall(r'href="/why_this_shape/reel/([\w-]+)/"(.{0,20000}?)</a>', html, re.S):
         nums = [num(x) for x in re.findall(r"<span[^>]*>\s*([\d.,]+\s*[천만억KM]?)\s*</span>", body)]
         if nums and code not in out:
-            out[code] = {"insta": nums[-1], "ig_likes": nums[0] if len(nums) >= 3 else None, "ig_comments": nums[1] if len(nums) >= 3 else None}
+            # 칸에 숫자가 3개면 좋아요·댓글·조회수. 좋아요가 0이면 인스타그램이 그 숫자를 아예 안 보여 줘서 개수가 줄어든다
+            # (숫자 1개 = 조회수만 → 좋아요 0·댓글 0, 2개 = 좋아요·조회수 → 댓글 0 으로 본다)
+            out[code] = {"insta": nums[-1], "ig_likes": nums[0] if len(nums) >= 2 else 0, "ig_comments": nums[1] if len(nums) >= 3 else 0}
     m = re.search(r"팔로워\s*([\d.,]+[천만억]?)명[^\"]*?게시물\s*([\d.,]+)개", html)
     if m:
         out["__followers"], out["__posts"] = num(m.group(1)), num(m.group(2))
