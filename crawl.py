@@ -97,6 +97,78 @@ def instagram():
         out["__followers"], out["__posts"] = num(m.group(1)), num(m.group(2))
     return out if any(not k.startswith("__") for k in out) else None
 
+TT_STAMP = os.path.join(os.path.expanduser("~"), "tools", "whyshape-tiktok-last.txt")
+TT_EVERY = 6 * 60
+
+
+def tiktok_list():
+    """PC에서만: 화면 없는 크롬으로 틱톡 프로필을 열어 올라온 영상 번호 목록을 읽는다(로그인 불필요). 못 읽으면 None."""
+    import time
+    if not (os.path.isdir(IG_PROFILE) and os.path.isfile(CHROME)):
+        return None
+    try:
+        if time.time() - float(open(TT_STAMP).read()) < TT_EVERY:
+            return None
+    except Exception:
+        pass
+    try:
+        html = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--user-data-dir=" + IG_PROFILE, "--window-size=1200,2400",
+                               "--virtual-time-budget=15000", "--dump-dom", f"https://www.tiktok.com/@{TIKTOK_USER}"],
+                              capture_output=True, timeout=90).stdout.decode("utf-8", "replace")
+    except Exception:
+        return None
+    open(TT_STAMP, "w").write(str(time.time()))
+    ids = sorted(set(re.findall(r"/video/(\d{15,})", html)))  # 번호가 클수록 나중에 올린 것
+    return ids or None
+
+
+def discover(videos, yt_ids, tt_ids, ig_codes, log):
+    """videos.json에 없는 영상을 찾아 스스로 등록한다.
+    유튜브에서 새 영상을 찾으면 제목과 올린 때를 읽어 새 줄을 만들고,
+    틱톡·인스타그램에서 찾은 새 번호는 그 플랫폼 칸이 비어 있는 가장 오래된 줄에 넣는다(없으면 새 줄)."""
+    changed = False
+    def fill(key, value, title=None):
+        nonlocal changed
+        for cfg in reversed(videos):            # 목록은 최신이 앞이므로 뒤에서부터 = 오래된 것부터
+            if cfg.get("auto") and not cfg.get(key):
+                cfg[key] = value
+                changed = True
+                return
+        kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+        videos.insert(0, {"id": "v" + value[-8:], "title": title or "새 영상", "posted": f"{kst.month}월 {kst.day}일 {kst:%H:%M}", key: value, "auto": True})
+        changed = True
+    known = {k: {v.get(k) for v in videos} for k in ("youtube", "tiktok", "insta")}
+    for vid in reversed(list(yt_ids)):          # Shorts 탭은 최신이 앞
+        if vid in known["youtube"]:
+            continue
+        title, posted = None, None
+        try:
+            html = get(f"https://www.youtube.com/shorts/{vid}", {"Cookie": "CONSENT=YES+1; SOCS=CAI"})
+            m = re.search(r'<meta property="og:title" content="([^"]*)"', html)
+            if m:
+                title = re.split(r"\s+#", m.group(1).replace("&quot;", '"').replace("&amp;", "&"))[0].strip()[:40]
+            m = re.search(r'"(?:publishDate|uploadDate)":"([^"]+)"', html)
+            if m:
+                t = datetime.datetime.fromisoformat(m.group(1)).astimezone(datetime.timezone(datetime.timedelta(hours=9)))
+                posted = f"{t.month}월 {t.day}일 {t:%H:%M}"
+        except Exception as e:
+            log.append(f"새 유튜브 영상 {vid} 정보 실패: {e}")
+        kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+        videos.insert(0, {"id": "v" + vid[-8:], "title": title or "새 영상", "posted": posted or f"{kst.month}월 {kst.day}일 {kst:%H:%M}", "youtube": vid, "auto": True})
+        changed = True
+        log.append(f"새 영상 등록(유튜브): {title or vid}")
+    for tid in tt_ids or []:
+        if tid not in known["tiktok"]:
+            fill("tiktok", tid)
+            log.append(f"새 영상 등록(틱톡): {tid}")
+    for code in ig_codes or []:
+        if code not in known["insta"]:
+            fill("insta", code)
+            log.append(f"새 영상 등록(인스타): {code}")
+    if changed:
+        json.dump(videos, open(os.path.join(HERE, "videos.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    return videos
+
 
 def main():
     data = json.load(open(os.path.join(HERE, "data.json"), encoding="utf-8"))
@@ -111,6 +183,11 @@ def main():
         log.append(f"youtube 실패: {e}")
     ig = instagram()
     log.append("인스타 읽음" if ig else "인스타 건너뜀")
+    try:
+        ig_codes = list(reversed([k for k in (ig or {}) if not k.startswith("__")]))  # 릴스 탭은 최신이 앞 → 오래된 것부터
+        videos = discover(videos, yt, tiktok_list(), ig_codes, log)
+    except Exception as e:
+        log.append(f"새 영상 찾기 실패: {e}")
     snap_videos = []
     for cfg in videos:
         v = dict(prev.get(cfg["id"], {"tiktok": 0, "tt_likes": 0, "tt_comments": 0, "youtube": 0, "insta": 0}))

@@ -197,7 +197,7 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
 }).join("") + (() => {
   const K = ["tiktok", "tt_likes", "tt_comments", "youtube", "yt_likes", "yt_comments", "insta", "ig_likes", "ig_comments"];
   const all = sum("tiktok") + sum("youtube") + sum("insta");
-  return `<tr class="total"><td>합계</td><td class="muted">영상 ${now.videos.length}편</td>${K.map((k) => `<td>${n(sum(k))}</td>`).join("")}<td>${n(all)}</td></tr>`;
+  return `<tr class="total"><td>합계</td><td></td>${K.map((k) => `<td>${n(sum(k))}</td>`).join("")}<td>${n(all)}</td></tr>`;
 })();
 // ---- 전체 조회수 추세: 합계(굵게)와 플랫폼별(가늘게) ----
 (() => {
