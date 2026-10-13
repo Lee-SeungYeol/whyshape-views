@@ -274,7 +274,7 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
   const first = (id) => { for (const s of snaps) { const v = s.videos.find((q) => q.id === id); if (v) return { t: T(s), y: tot(v) }; } return null; };
   const rows = now.videos.map((v) => {
     const cur = tot(v), a = at(v.id, tn - H) || first(v.id), b = at(v.id, tn - 2 * H);
-    const span = Math.max((tn - a.t) / H, 1 / 12), rate = (cur - a.y) / span;         // 시간당 증가
+    const span = Math.max((tn - a.t) / H, 1), rate = (cur - a.y) / span;              // 최근 1시간에 실제로 늘어난 양. 기록이 1시간보다 짧아도 부풀려 환산하지 않는다(5분에 1회를 시간당 12회로 보이게 했던 문제)
     const prevRate = b && a.t > b.t ? (a.y - b.y) / ((a.t - b.t) / H) : null;
     let flow = "지켜보는 중", cls = "muted";
     if (rate <= 0) { flow = "멈춤"; }
