@@ -231,7 +231,10 @@ def main():
         followers["instagram"] = ig.get("__followers", followers.get("instagram", 0))
         posts = ig.get("__posts", posts)
     kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
-    data["snapshots"].append({"at": kst.strftime("%Y-%m-%d %H:%M"), "followers": followers, "insta_posts": posts, "videos": snap_videos})
+    snap = {"at": kst.strftime("%Y-%m-%d %H:%M"), "followers": followers, "insta_posts": posts, "videos": snap_videos}
+    if last.get("ret_at"):
+        snap["ret_at"] = last["ret_at"]  # 시청 지속 값을 마지막으로 읽은 때
+    data["snapshots"].append(snap)
     json.dump(data, open(os.path.join(HERE, "data.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     subprocess.run([sys.executable, os.path.join(HERE, "build.py")], check=True)
     print("저장:", kst.strftime("%H:%M"), {v["id"]: (v["tiktok"], v["youtube"], v.get("insta")) for v in snap_videos}, "|", "; ".join(log) or "오류 없음")
