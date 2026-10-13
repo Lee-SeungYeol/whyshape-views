@@ -81,11 +81,14 @@ def instagram():
         return None
     open(IG_STAMP, "w").write(str(time.time()))
     out = {}
-    for code, body in re.findall(r'href="/why_this_shape/reel/([\w-]+)/"(.{0,4000}?)</a>', html, re.S):
+    for code, body in re.findall(r'href="/why_this_shape/reel/([\w-]+)/"(.{0,20000}?)</a>', html, re.S):
         nums = [num(x) for x in re.findall(r"<span[^>]*>\s*([\d.,]+\s*[천만억KM]?)\s*</span>", body)]
         if nums and code not in out:
             out[code] = nums[-1]
-    return out or None
+    m = re.search(r"팔로워\s*([\d.,]+[천만억]?)명[^\"]*?게시물\s*([\d.,]+)개", html)
+    if m:
+        out["__followers"], out["__posts"] = num(m.group(1)), num(m.group(2))
+    return out if any(not k.startswith("__") for k in out) else None
 
 
 def main():
@@ -126,8 +129,12 @@ def main():
             followers["tiktok"] = f
     except Exception as e:
         log.append(f"tiktok 팔로워 실패: {e}")
+    posts = last.get("insta_posts", 0)
+    if ig:
+        followers["instagram"] = ig.get("__followers", followers.get("instagram", 0))
+        posts = ig.get("__posts", posts)
     kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
-    data["snapshots"].append({"at": kst.strftime("%Y-%m-%d %H:%M"), "followers": followers, "insta_posts": last.get("insta_posts", 0), "videos": snap_videos})
+    data["snapshots"].append({"at": kst.strftime("%Y-%m-%d %H:%M"), "followers": followers, "insta_posts": posts, "videos": snap_videos})
     json.dump(data, open(os.path.join(HERE, "data.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     subprocess.run([sys.executable, os.path.join(HERE, "build.py")], check=True)
     print("저장:", kst.strftime("%H:%M"), {v["id"]: (v["tiktok"], v["youtube"], v.get("insta")) for v in snap_videos}, "|", "; ".join(log) or "오류 없음")

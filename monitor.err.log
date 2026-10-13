@@ -1,0 +1,4 @@
+error: cannot pull with rebase: You have unstaged changes.
+error: Please commit or stash them.
+C:\Users\altum\tools\whyshape-views\crawl.py:129: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
