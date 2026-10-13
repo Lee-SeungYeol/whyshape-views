@@ -56,6 +56,38 @@ def tiktok_followers():
     return int(m.group(1)) if m else None
 
 
+CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+IG_PROFILE = os.path.join(os.path.expanduser("~"), "tools", "whyshape-chrome-profile")
+IG_STAMP = os.path.join(os.path.expanduser("~"), "tools", "whyshape-insta-last.txt")
+IG_EVERY = 15 * 60  # 인스타그램은 15분에 한 번만 연다(계정에 무리가 가지 않게)
+
+
+def instagram():
+    """PC에서만: 인스타그램에 로그인해 둔 크롤러 전용 크롬을 화면 없이 띄워 릴스 조회수를 읽는다.
+    전용 크롬이 없거나, 창이 열려 있거나, 로그인이 풀렸으면 None을 돌려준다."""
+    import time
+    if not (os.path.isdir(IG_PROFILE) and os.path.isfile(CHROME)):
+        return None
+    try:
+        if time.time() - float(open(IG_STAMP).read()) < IG_EVERY:
+            return None
+    except Exception:
+        pass
+    try:
+        html = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--user-data-dir=" + IG_PROFILE, "--window-size=1200,2400",
+                               "--virtual-time-budget=15000", "--dump-dom", "https://www.instagram.com/why_this_shape/reels/"],
+                              capture_output=True, timeout=90).stdout.decode("utf-8", "replace")
+    except Exception:
+        return None
+    open(IG_STAMP, "w").write(str(time.time()))
+    out = {}
+    for code, body in re.findall(r'href="/why_this_shape/reel/([\w-]+)/"(.{0,4000}?)</a>', html, re.S):
+        nums = [num(x) for x in re.findall(r"<span[^>]*>\s*([\d.,]+\s*[천만억KM]?)\s*</span>", body)]
+        if nums and code not in out:
+            out[code] = nums[-1]
+    return out or None
+
+
 def main():
     data = json.load(open(os.path.join(HERE, "data.json"), encoding="utf-8"))
     videos = json.load(open(os.path.join(HERE, "videos.json"), encoding="utf-8"))
@@ -67,6 +99,8 @@ def main():
     except Exception as e:
         yt, subs = {}, None
         log.append(f"youtube 실패: {e}")
+    ig = instagram()
+    log.append("인스타 읽음" if ig else "인스타 건너뜀")
     snap_videos = []
     for cfg in videos:
         v = dict(prev.get(cfg["id"], {"tiktok": 0, "tt_likes": 0, "tt_comments": 0, "youtube": 0, "insta": 0}))
@@ -80,6 +114,8 @@ def main():
                         v[k] = val
             except Exception as e:
                 log.append(f"tiktok {cfg['id']} 실패: {e}")
+        if ig and ig.get(cfg.get("insta")) is not None:
+            v["insta"] = ig[cfg["insta"]]
         snap_videos.append(v)
     followers = dict(last["followers"])
     if subs is not None:
