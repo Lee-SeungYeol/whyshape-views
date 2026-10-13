@@ -193,7 +193,7 @@ const prevOf = (id) => (prev ? prev.videos.find((v) => v.id === id) : null);
 const plus = (a, b) => (b != null && a != null && a - b > 0 ? `<span class="plus">+${n(a - b)}</span>` : "");
 const sum = (k) => now.videos.reduce((s, v) => s + (v[k] || 0), 0);
 const psum = (k) => (prev ? prev.videos.reduce((s, v) => s + (v[k] || 0), 0) : null);
-document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 초록색 숫자는 최근 1시간 증가분` : "") + " · 이 화면은 3분마다 최신 값을 스스로 가져옵니다.";
+document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 초록색 숫자는 최근 1시간 증가분` : "") + " · 크롤러가 3분마다 읽고, 이 화면은 1분마다 새 값을 확인합니다(최대 4분쯤 늦을 수 있음).";
 const tiles = [
   ["전체 조회수", sum("tiktok") + sum("youtube") + sum("insta"), prev ? psum("tiktok") + psum("youtube") + psum("insta") : null, null, "틱톡 + 유튜브 + 인스타그램"],
   ["틱톡 조회수", sum("tiktok"), psum("tiktok"), "var(--tiktok)", `팔로워 ${n(now.followers.tiktok)}`],
@@ -403,7 +403,7 @@ async function live() {
   }
 }
 live();
-setInterval(live, 180000);
+setInterval(live, 60000);
 </script>
 </body>
 </html>
