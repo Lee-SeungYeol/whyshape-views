@@ -42,6 +42,13 @@ def youtube():
     return out, subs
 
 
+def youtube_video(video_id):
+    """영상 한 편의 페이지에서 정확한 조회수와 좋아요 수를 읽는다."""
+    html = get(f"https://www.youtube.com/shorts/{video_id}", {"Cookie": "CONSENT=YES+1; SOCS=CAI"})
+    pick = lambda k: (lambda x: int(x.group(1)) if x else None)(re.search(r'"%s":"?(\d+)' % k, html))
+    return {"youtube": pick("viewCount"), "yt_likes": pick("likeCount")}
+
+
 def tiktok(video_id):
     html = get(f"https://www.tiktok.com/@{TIKTOK_USER}/video/{video_id}")
     m = re.search(r'<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)</script>', html, re.S)
@@ -84,7 +91,7 @@ def instagram():
     for code, body in re.findall(r'href="/why_this_shape/reel/([\w-]+)/"(.{0,20000}?)</a>', html, re.S):
         nums = [num(x) for x in re.findall(r"<span[^>]*>\s*([\d.,]+\s*[천만억KM]?)\s*</span>", body)]
         if nums and code not in out:
-            out[code] = nums[-1]
+            out[code] = {"insta": nums[-1], "ig_likes": nums[0] if len(nums) >= 3 else None, "ig_comments": nums[1] if len(nums) >= 3 else None}
     m = re.search(r"팔로워\s*([\d.,]+[천만억]?)명[^\"]*?게시물\s*([\d.,]+)개", html)
     if m:
         out["__followers"], out["__posts"] = num(m.group(1)), num(m.group(2))
@@ -110,6 +117,13 @@ def main():
         v.update({"id": cfg["id"], "title": cfg["title"], "posted": cfg["posted"]})
         if yt.get(cfg.get("youtube")) is not None:
             v["youtube"] = yt[cfg["youtube"]]
+        if cfg.get("youtube"):
+            try:
+                for k, val in youtube_video(cfg["youtube"]).items():
+                    if val is not None:
+                        v[k] = val
+            except Exception as e:
+                log.append(f"youtube {cfg['id']} 실패: {e}")
         if cfg.get("tiktok"):
             try:
                 for k, val in tiktok(cfg["tiktok"]).items():
@@ -118,7 +132,9 @@ def main():
             except Exception as e:
                 log.append(f"tiktok {cfg['id']} 실패: {e}")
         if ig and ig.get(cfg.get("insta")) is not None:
-            v["insta"] = ig[cfg["insta"]]
+            for k, val in ig[cfg["insta"]].items():
+                if val is not None:
+                    v[k] = val
         snap_videos.append(v)
     followers = dict(last["followers"])
     if subs is not None:
