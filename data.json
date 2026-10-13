@@ -3016,13 +3016,10 @@
      "id": "vjfDlbWmw",
      "title": "토끼가 제때 일어났는데도 거북이에게 진 이유",
      "posted": "10월 13일 14:19",
-     "yt_likes": 0,
-     "len": 76.0,
-     "tt_avg": 1.3,
-     "tt_full": 0
+     "yt_likes": 0
     },
     {
-     "tiktok": 17,
+     "tiktok": 19,
      "tt_likes": 0,
      "tt_comments": 0,
      "youtube": 21,
@@ -3033,35 +3030,27 @@
      "yt_likes": 1,
      "ig_likes": 6,
      "ig_comments": 0,
-     "yt_comments": 0,
-     "len": 70.7,
-     "tt_avg": 10.95,
-     "tt_full": 4.8,
-     "tt_drop": "0:02"
+     "yt_comments": 0
     },
     {
      "id": "hamster",
      "title": "햄스터 몇 마리면 전기 요금이 0원",
      "posted": "10월 13일 12:00",
-     "tiktok": 26,
+     "tiktok": 27,
      "tt_likes": 1,
      "tt_comments": 0,
-     "youtube": 41,
+     "youtube": 44,
      "insta": 225,
      "yt_likes": 4,
      "ig_likes": 5,
      "ig_comments": 0,
-     "yt_comments": 1,
-     "len": 71.9,
-     "tt_avg": 13.68,
-     "tt_full": 3.2,
-     "tt_drop": "0:02"
+     "yt_comments": 1
     },
     {
      "id": "nokia",
      "title": "노키아를 우주에서 떨어뜨리면",
      "posted": "10월 13일 09:52",
-     "tiktok": 60,
+     "tiktok": 61,
      "tt_likes": 1,
      "tt_comments": 0,
      "youtube": 765,
@@ -3069,17 +3058,13 @@
      "yt_likes": 6,
      "ig_likes": 1,
      "ig_comments": 0,
-     "yt_comments": 0,
-     "len": 76.2,
-     "tt_avg": 13.12,
-     "tt_full": 1.6,
-     "tt_drop": "0:01"
+     "yt_comments": 0
     },
     {
      "id": "rope",
      "title": "단체 줄넘기",
      "posted": "10월 12일 17:38",
-     "tiktok": 153,
+     "tiktok": 154,
      "tt_likes": 5,
      "tt_comments": 0,
      "youtube": 401,
@@ -3087,11 +3072,7 @@
      "yt_likes": 8,
      "ig_likes": 1,
      "ig_comments": 0,
-     "yt_comments": 0,
-     "len": 70.9,
-     "tt_avg": 12.93,
-     "tt_full": 2.6,
-     "tt_drop": "0:01"
+     "yt_comments": 0
     },
     {
      "id": "coin",
@@ -3105,14 +3086,9 @@
      "yt_likes": 20,
      "ig_likes": 1,
      "ig_comments": 0,
-     "yt_comments": 0,
-     "len": 68.1,
-     "tt_avg": 22.84,
-     "tt_full": 7.4,
-     "tt_drop": "0:01"
+     "yt_comments": 0
     }
-   ],
-   "ret_at": "2026-10-13 14:45"
+   ]
   }
  ]
 }
