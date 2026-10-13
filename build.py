@@ -72,6 +72,15 @@ HTML = r"""<!doctype html>
   .rk { display: inline-block; min-width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 6px; background: var(--line); font-size: 12px; margin-right: 8px; }
   .mv { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0 2px; }
   .mv .plus { font-size: 13px; }
+  .hrow { display: grid; grid-template-columns: minmax(150px, 300px) 1fr 190px; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .hrow:first-child { border-top: 0; }
+  .hname { font-weight: 700; font-size: 15px; display: flex; align-items: flex-start; }
+  .hnum { text-align: right; line-height: 1.2; }
+  .hnum b { font-size: 26px; font-variant-numeric: tabular-nums; }
+  .hnum small { font-size: 12px; color: var(--ink2); margin-left: 4px; }
+  .hup { color: var(--up); }
+  .hflow { display: block; font-size: 12px; color: var(--ink2); margin-top: 2px; }
+  .hflow.on { color: var(--up); }
   svg text { font-family: inherit; fill: var(--ink2); font-size: 12px; }
   svg .lab { fill: var(--ink); font-size: 13px; font-weight: 700; }
   .legend { flex-wrap: wrap; row-gap: 6px; }
@@ -91,6 +100,9 @@ HTML = r"""<!doctype html>
     .row { grid-template-columns: 1fr 58px; row-gap: 6px; }
     .row .name { grid-column: 1 / -1; font-size: 14px; }
     .prow { grid-template-columns: 1fr !important; row-gap: 6px; }
+    .hrow { grid-template-columns: 1fr 104px; column-gap: 10px; row-gap: 4px; }
+    .hname { grid-column: 1 / -1; font-size: 14px; }
+    .hnum b { font-size: 22px; }
     .pinfo { text-align: left; }
     .hm { min-width: 520px; font-size: 13px; }
     .minis { grid-template-columns: 1fr; }
@@ -127,7 +139,7 @@ HTML = r"""<!doctype html>
   </div>
   <div class="card">
     <h2>지금 오르는 영상</h2>
-    <div class="note">최근 1시간 동안 조회수가 얼마나 늘었는지로 순서를 매겼습니다. 막대는 최근 1시간에 늘어난 양이고, 옆의 말은 그 전 1시간과 비교한 흐름입니다. 기록이 1시간보다 짧으면 있는 기간으로 환산합니다. 앞으로 더 오를지에 대한 어림이지 보장은 아닙니다.</div>
+    <div class="note">최근 1시간에 조회수가 많이 늘어난 순서입니다. 큰 숫자는 1시간에 늘어난 조회수, 가운데 줄은 최근 3시간의 오름세입니다(가파를수록 빨리 오르는 중).</div>
     <div id="hot"></div>
   </div>
   <div class="card">
@@ -250,8 +262,25 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
     else { flow = "꾸준히 오름"; cls = "up"; }
     return { v, rate, flow, cls, cur };
   }).sort((x, y) => y.rate - x.rate).slice(0, 10);
-  const mx = Math.max(1, ...rows.map((r) => r.rate));
-  document.getElementById("hot").innerHTML = rows.map((r, i) => `<div class="prow" style="grid-template-columns: minmax(150px, 280px) 1fr 210px"><div class="pname"><span class="rk">${i + 1}</span>${r.v.title}</div><div class="ptrack"><div class="pfill" style="width:${Math.max(0, (r.rate / mx) * 100)}%;background:var(--up)" data-tip="${r.v.title} · 시간당 +${n(Math.round(r.rate))}회"></div></div><div class="pinfo"><b>시간당 +${n(Math.round(r.rate))}</b> · <span class="${r.cls === "up" ? "plus" : "muted"}" style="margin-left:0;font-size:13px">${r.flow}</span><br>지금까지 ${n(r.cur)}회</div></div>`).join("");
+  // 영상마다 최근 3시간 동안 늘어난 양을 작은 꺾은선으로 그린다. 세로 눈금은 모든 영상이 같아서 가파를수록 빨리 오르는 것이다.
+  const SPAN = 3 * H, t0 = tn - SPAN, SW = 220, SH = 46;
+  const series = rows.map((r) => {
+    const pts = snaps.filter((s) => T(s) >= t0).map((s) => { const v = s.videos.find((q) => q.id === r.v.id); return v ? { t: T(s), y: tot(v) } : null; }).filter(Boolean);
+    const base = pts.length ? pts[0].y : r.cur;
+    return pts.map((q) => ({ t: q.t, y: q.y - base }));
+  });
+  const gmax = Math.max(1, ...series.flatMap((p) => p.map((q) => q.y)));
+  const spark = (pts, on) => {
+    if (pts.length < 2) return `<svg viewBox="0 0 ${SW} ${SH}" width="100%" height="${SH}"></svg>`;
+    const X = (t) => 4 + ((t - t0) / SPAN) * (SW - 8), Y = (y) => SH - 5 - (y / gmax) * (SH - 10);
+    const line = pts.map((q) => X(q.t).toFixed(1) + "," + Y(q.y).toFixed(1)).join(" "), last = pts[pts.length - 1];
+    const color = on ? "var(--up)" : "var(--ink2)";
+    return `<svg viewBox="0 0 ${SW} ${SH}" width="100%" height="${SH}" preserveAspectRatio="none" role="img" aria-label="최근 3시간 증가"><line x1="4" x2="${SW - 4}" y1="${SH - 5}" y2="${SH - 5}" stroke="var(--line)"/><polygon points="${X(pts[0].t).toFixed(1)},${SH - 5} ${line} ${X(last.t).toFixed(1)},${SH - 5}" fill="${color}" opacity="0.14"/><polyline fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="${line}"/></svg>`;
+  };
+  document.getElementById("hot").innerHTML = rows.map((r, i) => {
+    const on = r.rate > 0, gain = series[i].length ? series[i][series[i].length - 1].y : 0;
+    return `<div class="hrow"><div class="hname"><span class="rk">${i + 1}</span><span>${r.v.title}</span></div><div class="hspark" data-tip="${r.v.title} · 최근 3시간 +${n(gain)}회">${spark(series[i], on)}</div><div class="hnum"><b class="${on ? "hup" : "muted"}">${on ? "+" + n(Math.round(r.rate)) : "0"}</b><small>회/시간</small><span class="hflow ${r.cls === "up" ? "on" : ""}">${r.flow}</span></div></div>`;
+  }).join("");
 })();
 // ---- 플랫폼별 세기: 점유율 막대 + 영상×플랫폼 표 ----
 (() => {
