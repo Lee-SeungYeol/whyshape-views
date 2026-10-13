@@ -65,7 +65,11 @@
   .mv .plus { font-size: 13px; }
   .hrow { display: grid; grid-template-columns: minmax(150px, 300px) 1fr 190px; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
   .hrow:first-child { border-top: 0; }
-  .hname { font-weight: 700; font-size: 15px; display: flex; align-items: flex-start; }
+  .hname { font-weight: 700; font-size: 15px; display: flex; align-items: center; }
+  .lv { flex: none; margin-left: 8px; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+  .lv.s3 { background: var(--up); border-color: var(--up); color: var(--surface); }
+  .lv.s2 { border-color: var(--up); color: var(--up); }
+  .lv.s1 { color: var(--ink2); }
   .hnum { text-align: right; line-height: 1.2; }
   .hnum b { font-size: 26px; font-variant-numeric: tabular-nums; }
   .hnum small { font-size: 12px; color: var(--ink2); margin-left: 4px; }
@@ -130,7 +134,7 @@
   </div>
   <div class="card">
     <h2>지금 오르는 영상</h2>
-    <div class="note">최근 1시간에 조회수가 많이 늘어난 순서입니다. 큰 숫자는 1시간에 늘어난 조회수, 가운데 줄은 최근 3시간의 오름세입니다(가파를수록 빨리 오르는 중).</div>
+    <div class="note">최근 1시간에 조회수가 많이 늘어난 순서입니다. 큰 숫자는 1시간에 늘어난 조회수, 가운데 줄은 최근 3시간의 오름세입니다(가파를수록 빨리 오르는 중). 세기는 1시간에 200회 이상이면 강세, 30회 이상이면 보통, 그보다 적으면 약함입니다.</div>
     <div id="hot"></div>
   </div>
   <div class="card">
@@ -270,7 +274,8 @@ document.getElementById("tb").innerHTML = ranked.map((v) => {
   };
   document.getElementById("hot").innerHTML = rows.map((r, i) => {
     const on = r.rate > 0, gain = series[i].length ? series[i][series[i].length - 1].y : 0;
-    return `<div class="hrow"><div class="hname"><span class="rk">${i + 1}</span><span>${r.v.title}</span></div><div class="hspark" data-tip="${r.v.title} · 최근 3시간 +${n(gain)}회">${spark(series[i], on)}</div><div class="hnum"><b class="${on ? "hup" : "muted"}">${on ? "+" + n(Math.round(r.rate)) : "0"}</b><small>회/시간</small><span class="hflow ${r.cls === "up" ? "on" : ""}">${r.flow}</span></div></div>`;
+    const lv = r.rate >= 200 ? ["강세", "s3"] : r.rate >= 30 ? ["보통", "s2"] : ["약함", "s1"];
+    return `<div class="hrow"><div class="hname"><span class="rk">${i + 1}</span><span>${r.v.title}</span><span class="lv ${lv[1]}">${lv[0]}</span></div><div class="hspark" data-tip="${r.v.title} · 최근 3시간 +${n(gain)}회">${spark(series[i], on)}</div><div class="hnum"><b class="${on ? "hup" : "muted"}">${on ? "+" + n(Math.round(r.rate)) : "0"}</b><small>회/시간</small><span class="hflow ${r.cls === "up" ? "on" : ""}">${r.flow}</span></div></div>`;
   }).join("");
 })();
 // ---- 플랫폼별 세기: 점유율 막대 + 영상×플랫폼 표 ----
