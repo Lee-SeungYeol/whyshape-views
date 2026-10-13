@@ -183,14 +183,17 @@ HTML = r"""<!doctype html>
 <script>
 const EMBED = __DATA__;
 function render(DATA) {
-const snaps = DATA.snapshots, now = snaps[snaps.length - 1], prev = snaps.length > 1 ? snaps[snaps.length - 2] : null;
+const snaps = DATA.snapshots, now = snaps[snaps.length - 1];
+// 초록색 증가 숫자의 기준: 1시간 전 기록(3분마다 읽으므로 바로 앞 기록과 비교하면 거의 0이라 안 보인다)
+const __ms = (s) => new Date(s.at.replace(" ", "T")).getTime();
+const prev = snaps.length > 1 ? ([...snaps].reverse().find((s) => __ms(s) <= __ms(now) - 3600000) || snaps[0]) : null;
 const tot = (v) => (v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0);
 const n = (x) => (x == null ? "–" : x.toLocaleString("ko-KR"));
 const prevOf = (id) => (prev ? prev.videos.find((v) => v.id === id) : null);
 const plus = (a, b) => (b != null && a != null && a - b > 0 ? `<span class="plus">+${n(a - b)}</span>` : "");
 const sum = (k) => now.videos.reduce((s, v) => s + (v[k] || 0), 0);
 const psum = (k) => (prev ? prev.videos.reduce((s, v) => s + (v[k] || 0), 0) : null);
-document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 그 전: ${prev.at}` : "") + " · 이 화면은 3분마다 최신 값을 스스로 가져옵니다.";
+document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 초록색 숫자는 최근 1시간 증가분` : "") + " · 이 화면은 3분마다 최신 값을 스스로 가져옵니다.";
 const tiles = [
   ["전체 조회수", sum("tiktok") + sum("youtube") + sum("insta"), prev ? psum("tiktok") + psum("youtube") + psum("insta") : null, null, "틱톡 + 유튜브 + 인스타그램"],
   ["틱톡 조회수", sum("tiktok"), psum("tiktok"), "var(--tiktok)", `팔로워 ${n(now.followers.tiktok)}`],
@@ -205,7 +208,7 @@ document.getElementById("bars").innerHTML = ranked.map((v) => {
   const seg = (val, color, label) => (val > 0 ? `<div class="seg" style="width:${(val / max) * 100}%;background:${color}" data-tip="${label} ${n(val)}회"></div>` : "");
   return `<div class="row"><div class="name">${v.title}<div class="when">${v.posted}</div></div><div class="bar">${seg(t, "var(--tiktok)", "틱톡")}${seg(y, "var(--youtube)", "유튜브")}${seg(g, "var(--insta)", "인스타그램")}</div><div class="tot">${n(t + y + g)}</div></div>`;
 }).join("");
-document.getElementById("tnote").textContent = prev ? `초록색 숫자는 ${prev.at} 이후 늘어난 양입니다.` : "";
+document.getElementById("tnote").textContent = prev ? `초록색 숫자는 최근 1시간(${prev.at.slice(11)} 이후) 동안 늘어난 양입니다.` : "";
 document.getElementById("tb").innerHTML = ranked.map((v) => {
   const p = prevOf(v.id) || {};
   return `<tr><td>${v.title}</td><td class="muted">${v.posted}</td><td>${n(v.tiktok)}${plus(v.tiktok, p.tiktok)}</td><td>${n(v.tt_likes)}</td><td>${n(v.tt_comments)}</td><td>${n(v.youtube)}${plus(v.youtube, p.youtube)}</td><td>${n(v.yt_likes)}</td><td>${n(v.yt_comments)}</td><td class="${v.insta == null ? "muted" : ""}">${v.insta == null ? "못 읽음" : n(v.insta) + plus(v.insta, p.insta)}</td><td>${n(v.ig_likes)}</td><td>${n(v.ig_comments)}</td><td><b>${n((v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0))}</b></td></tr>`;
