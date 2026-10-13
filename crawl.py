@@ -114,8 +114,8 @@ def tiktok_list(known):
             return None
     except Exception:
         pass
-    open(stamp, "w").write(str(time.time()))
-    html = get(f"https://www.tiktok.com/embed/@{TIKTOK_USER}")
+    html = get(f"https://www.tiktok.com/embed/@{TIKTOK_USER}")  # 503·429가 잦다. 실패하면 다음 회차(3분 뒤)에 다시 한다
+    open(stamp, "w").write(str(time.time()))                     # 성공했을 때만 15분을 쉰다
     out = []
     for tid in sorted(set(re.findall(r"(?<!\d)(\d{19})(?!\d)", html))):  # 번호가 클수록 나중에 올린 것
         if tid in known:
