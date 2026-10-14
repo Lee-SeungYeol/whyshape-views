@@ -181,7 +181,15 @@ def discover(videos, yt_ids, tt_ids, ig_codes, log):
             log.append(f"틱톡 설명 읽기 실패 {tid}: {e}")
         is_zh = bool(re.search(r"[一-鿿]", desc)) and not re.search(r"[가-힣]", desc)
         if is_zh:
+            # zh_titles.json: 설명에 들어 있을 한자 → 원본의 한글 제목(원본이 아직 등록되기 전이어도 이름을 맞게 붙인다)
+            try:
+                table = json.load(open(os.path.join(HERE, "zh_titles.json"), encoding="utf-8"))
+            except Exception:
+                table = {}
+            named = next((t for k, t in table.items() if k in desc), None)
             base = next((v for v in videos if any(h in desc for h in v.get("zh_hint", []))), None)                 or next((v for v in videos if v.get("lang") != "zh"), None)
+            if named:
+                base = {"title": named}
             kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
             videos.insert(0, {"id": "zh" + tid[-8:], "title": "(중국) " + (base["title"] if base else "새 영상"),
                               "posted": f"{kst.month}월 {kst.day}일 {kst:%H:%M}", "tiktok": tid, "lang": "zh"})
