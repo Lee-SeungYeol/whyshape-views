@@ -198,17 +198,29 @@ HTML = r"""<!doctype html>
 <div id="tip"></div>
 <script>
 const EMBED = __DATA__;
+// 초록색 증가 숫자의 기준(사용자 요청 2026-10-14): 이 기기에서 지난번에 화면을 열었을 때의 기록 이후 늘어난 양.
+// 5분 안에 다시 새로고침하면 같은 방문으로 보고 기준을 그대로 둔다. 처음 여는 기기면 바로 앞 기록(3분)과 비교한다.
+const SEEN_KEY = "whyshape-seen";
+const SEEN = (() => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || "null"); } catch (e) { return null; } })();
+const BASE_AT = SEEN ? (Date.now() - (SEEN.wall || 0) < 5 * 60000 ? SEEN.base : SEEN.loaded) : null;
+let __marked = false;
+function markSeen(at) {
+  if (__marked) return; __marked = true;
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify({ base: BASE_AT, loaded: at, wall: Date.now() })); } catch (e) {}
+}
+const whenTxt = (at, ref) => (at.slice(0, 10) === ref.slice(0, 10) ? at.slice(11) : `${+at.slice(5, 7)}월 ${+at.slice(8, 10)}일 ${at.slice(11)}`);
 function render(DATA) {
 const snaps = DATA.snapshots, now = snaps[snaps.length - 1];
-// 초록색 증가 숫자의 기준: 바로 앞 기록(크롤러가 3분마다 읽으므로 최근 3분 동안 늘어난 양. 사용자 요청 2026-10-13)
-const prev = snaps.length > 1 ? snaps[snaps.length - 2] : null;
+const baseSnap = BASE_AT ? [...snaps].reverse().find((x) => x.at <= BASE_AT) || snaps[0] : null;
+const prev = baseSnap ? (baseSnap === now ? null : baseSnap) : snaps.length > 1 ? snaps[snaps.length - 2] : null;
+const sinceTxt = prev ? (baseSnap ? `지난번에 이 화면을 연 때(${whenTxt(prev.at, now.at)}) 이후 늘어난 양` : "최근 3분 증가분") : "";
 const tot = (v) => (v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0);
 const n = (x) => (x == null ? "–" : x.toLocaleString("ko-KR"));
 const prevOf = (id) => (prev ? prev.videos.find((v) => v.id === id) : null);
 const plus = (a, b) => (b != null && a != null && a - b > 0 ? `<span class="plus">+${n(a - b)}</span>` : "");
 const sum = (k) => now.videos.reduce((s, v) => s + (v[k] || 0), 0);
 const psum = (k) => (prev ? prev.videos.reduce((s, v) => s + (v[k] || 0), 0) : null);
-document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 초록색 숫자는 최근 3분 증가분` : "") + " · 크롤러가 3분마다 읽고, 이 화면은 1분마다 새 값을 확인합니다(최대 4분쯤 늦을 수 있음).";
+document.getElementById("sub").textContent = `마지막으로 읽은 때: ${now.at}` + (prev ? ` · 초록색 숫자는 ${sinceTxt}` : "") + " · 크롤러가 3분마다 읽고, 이 화면은 1분마다 새 값을 확인합니다(최대 4분쯤 늦을 수 있음).";
 const tiles = [
   ["전체 조회수", sum("tiktok") + sum("youtube") + sum("insta"), prev ? psum("tiktok") + psum("youtube") + psum("insta") : null, null, "틱톡 + 유튜브 + 인스타그램"],
   ["틱톡 조회수", sum("tiktok"), psum("tiktok"), "var(--tiktok)", `팔로워 ${n(now.followers.tiktok)}`],
@@ -223,7 +235,7 @@ document.getElementById("bars").innerHTML = ranked.map((v) => {
   const seg = (val, color, label) => (val > 0 ? `<div class="seg" style="width:${(val / max) * 100}%;background:${color}" data-tip="${label} ${n(val)}회"></div>` : "");
   return `<div class="row"><div class="name">${v.title}<div class="when">${v.posted}</div></div><div class="bar">${seg(t, "var(--tiktok)", "틱톡")}${seg(y, "var(--youtube)", "유튜브")}${seg(g, "var(--insta)", "인스타그램")}</div><div class="tot">${n(t + y + g)}</div></div>`;
 }).join("");
-document.getElementById("tnote").textContent = prev ? `초록색 숫자는 바로 앞 기록(${prev.at.slice(11)}) 이후, 약 3분 동안 늘어난 양입니다. 늘지 않았으면 표시되지 않습니다.` : "";
+document.getElementById("tnote").textContent = prev ? `초록색 숫자는 ${sinceTxt}입니다. 화면을 열어 둔 동안에도 계속 쌓이고, 늘지 않았으면 표시되지 않습니다.` : "";
 document.getElementById("tb").innerHTML = ranked.map((v) => {
   const p = prevOf(v.id) || {};
   return `<tr><td>${v.title}</td><td class="muted">${v.posted}</td><td>${n(v.tiktok)}${plus(v.tiktok, p.tiktok)}</td><td>${n(v.tt_likes)}${plus(v.tt_likes, p.tt_likes)}</td><td>${n(v.tt_comments)}${plus(v.tt_comments, p.tt_comments)}</td><td>${n(v.youtube)}${plus(v.youtube, p.youtube)}</td><td>${n(v.yt_likes)}${plus(v.yt_likes, p.yt_likes)}</td><td>${n(v.yt_comments)}${plus(v.yt_comments, p.yt_comments)}</td><td class="${v.insta == null ? "muted" : ""}">${v.insta == null ? "못 읽음" : n(v.insta) + plus(v.insta, p.insta)}</td><td>${n(v.ig_likes)}${plus(v.ig_likes, p.ig_likes)}</td><td>${n(v.ig_comments)}${plus(v.ig_comments, p.ig_comments)}</td><td><b>${n((v.tiktok || 0) + (v.youtube || 0) + (v.insta || 0))}</b></td></tr>`;
@@ -472,11 +484,12 @@ async function live() {
       if (!r.ok) continue;
       const d = await r.json();
       if (d.snapshots && d.snapshots.length >= LAST.snapshots.length) { LAST = d; render(LAST); }
+      markSeen(LAST.snapshots[LAST.snapshots.length - 1].at);
       return;
     } catch (e) {}
   }
 }
-live();
+live().then(() => markSeen(LAST.snapshots[LAST.snapshots.length - 1].at));
 setInterval(live, 60000);
 </script>
 </body>
