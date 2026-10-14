@@ -167,9 +167,16 @@ def discover(videos, yt_ids, tt_ids, ig_codes, log):
         except Exception as e:
             log.append(f"새 유튜브 영상 {vid} 정보 실패: {e}")
         kst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
-        videos.insert(0, {"id": "v" + vid[-8:], "title": title or "새 영상", "posted": posted or f"{kst.month}월 {kst.day}일 {kst:%H:%M}", "youtube": vid, "auto": True})
+        slot = next((c for c in reversed(videos) if c.get("auto") and not c.get("youtube") and c.get("lang") != "zh"), None)
+        if slot:                                 # 틱톡·인스타에 먼저 올라가 이미 줄이 있는 영상
+            slot["youtube"] = vid
+            if title:
+                slot["title"] = title
+            log.append(f"유튜브 채움: {title or vid}")
+        else:
+            videos.insert(0, {"id": "v" + vid[-8:], "title": title or "새 영상", "posted": posted or f"{kst.month}월 {kst.day}일 {kst:%H:%M}", "youtube": vid, "auto": True})
+            log.append(f"새 영상 등록(유튜브): {title or vid}")
         changed = True
-        log.append(f"새 영상 등록(유튜브): {title or vid}")
     for tid in tt_ids or []:
         if tid in known["tiktok"]:
             continue
@@ -196,7 +203,8 @@ def discover(videos, yt_ids, tt_ids, ig_codes, log):
             changed = True
             log.append(f"새 영상 등록(틱톡 중국어판): {tid}")
         else:
-            fill("tiktok", tid)
+            first = re.split(r"[.?!\n]", desc.strip())[0].strip()[:28] if desc.strip() else None
+            fill("tiktok", tid, first)
             log.append(f"새 영상 등록(틱톡): {tid}")
     for code in ig_codes or []:
         if code not in known["insta"]:
